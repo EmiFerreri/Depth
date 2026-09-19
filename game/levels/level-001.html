@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DEPTH / LEVEL 001</title>
+<style>
+:root{--bg:#f3f3f0;--fg:#080808;--muted:#777}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f3f3f0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+canvas{display:block;width:100vw;height:100vh}
+#hud{position:fixed;inset:0 0 auto 0;z-index:10;display:flex;gap:8px;align-items:center;padding:12px 14px;color:var(--fg);pointer-events:none}
+.tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:8px 10px;background:rgba(243,243,240,.78);backdrop-filter:blur(10px)}
+#pause{margin-left:auto;pointer-events:auto;border:1px solid currentColor;background:rgba(243,243,240,.88);color:inherit;border-radius:999px;padding:10px 14px;font:800 10px/1 inherit;letter-spacing:.12em;cursor:pointer}
+#intro,#end,#pauseLayer{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+#intro{background:#f3f3f0;color:#080808}
+#pauseLayer,#end{display:none;background:rgba(0,0,0,.62);backdrop-filter:blur(8px);color:white}
+#pauseLayer.show,#end.show{display:flex}
+.card{max-width:720px}
+h1{margin:0 0 20px;font-size:clamp(68px,14vw,150px);line-height:.74;letter-spacing:-.09em}
+p{color:#777;line-height:1.55}
+#end p{color:#bbb}
+.keys{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:22px 0}
+.keys span{font-size:10px;letter-spacing:.08em;border:1px solid #c9c9c9;border-radius:999px;padding:7px 10px}
+button.primary{border:0;border-radius:999px;background:#080808;color:#fff;padding:14px 22px;font-weight:900;letter-spacing:.1em;cursor:pointer}
+#message{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:9;color:#080808;text-align:center;opacity:0;transition:.25s;pointer-events:none}
+#message.show{opacity:1}
+#message b{display:block;font-size:clamp(36px,7vw,84px);letter-spacing:-.06em}
+#message span{font-size:10px;letter-spacing:.25em;text-transform:uppercase}
+#hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;color:#777;font-size:9px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div class="tag">DEPTH /01</div>
+  <div class="tag">NIVEL 001</div>
+  <div class="tag" id="score">PUNTOS 000000</div>
+  <div class="tag" id="momentum">MOMENTUM 0.0</div>
+  <div class="tag" id="progress">0%</div>
+  <button id="pause" type="button">PAUSA Ⅱ</button>
+</div>
+
+<div id="message"><b id="msgBig">SUPERFICIE</b><span id="msgSmall">aprende a moverte</span></div>
+<div id="hint">A/D mover · ESPACIO saltar · SHIFT dash · P pausa</div>
+
+<div id="intro">
+  <div class="card">
+    <h1>DEPTH<br>/01</h1>
+    <p>Primer nivel. Aprende el lenguaje básico de DEPTH: movimiento, salto, momentum y rails. Todo ocurre en un único recorrido continuo.</p>
+    <div class="keys"><span>A / D mover</span><span>ESPACIO salto infinito</span><span>SHIFT dash</span><span>P pausa</span></div>
+    <button class="primary" id="start">INICIAR NIVEL 001</button>
+  </div>
+</div>
+
+<div id="pauseLayer"><div><h1>PAUSA</h1></div></div>
+
+<div id="end">
+  <div class="card">
+    <h1>NIVEL<br>COMPLETO</h1>
+    <p id="endText"></p>
+    <button class="primary" id="restart">REPETIR</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d',{alpha:false});
+const UI={
+ score:document.getElementById('score'),
+ momentum:document.getElementById('momentum'),
+ progress:document.getElementById('progress'),
+ pause:document.getElementById('pause'),
+ pauseLayer:document.getElementById('pauseLayer'),
+ intro:document.getElementById('intro'),
+ end:document.getElementById('end'),
+ endText:document.getElementById('endText'),
+ start:document.getElementById('start'),
+ restart:document.getElementById('restart'),
+ message:document.getElementById('message'),
+ msgBig:document.getElementById('msgBig'),
+ msgSmall:document.getElementById('msgSmall')
+};
+
+let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2);
+function resize(){W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',resize);resize();
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const floorY=()=>H*.79;
+const LEVEL_END=6200;
+const keys=new Set();
+
+const state={running:false,paused:false,time:0,score:0,cameraX:0,shake:0,msgT:0,particles:[],rings:[]};
+const P={x:120,y:0,vx:0,vy:0,r:14,dashCd:0,air:0,momentum:0};
+
+const platforms=[
+ {x:520,y:0,w:170},{x:920,y:0,w:150},{x:1380,y:0,w:180},
+ {x:2040,y:0,w:150},{x:2480,y:0,w:150},{x:3180,y:0,w:170},
+ {x:3860,y:0,w:150},{x:4520,y:0,w:170},{x:5300,y:0,w:170}
+];
+
+const rails=[
+ {shape:'line',x1:700,y1:0,x2:1050,y2:0},
+ {shape:'arc',x1:1600,y1:0,x2:2050,y2:0,bend:120},
+ {shape:'halfpipe',x1:2750,y1:0,x2:3300,y2:0,depth:120},
+ {shape:'wave',x1:4100,y1:0,x2:4700,y2:0,amp:58,waves:1.5},
+ {shape:'arc',x1:5000,y1:0,x2:5600,y2:0,bend:150}
+];
+
+function layout(){
+ const fy=floorY();
+ platforms.forEach((p,i)=>p.y=fy-[90,140,170,110,180,130,170,140,190][i]);
+ rails[0].y1=fy-150;rails[0].y2=fy-60;
+ rails[1].y1=fy-130;rails[1].y2=fy-180;
+ rails[2].y1=fy-155;rails[2].y2=fy-155;
+ rails[3].y1=fy-220;rails[3].y2=fy-220;
+ rails[4].y1=fy-170;rails[4].y2=fy-120;
+ state.rings=[
+  {x:1180,y:fy-210,r:20,used:false},
+  {x:2260,y:fy-250,r:20,used:false},
+  {x:3500,y:fy-260,r:20,used:false},
+  {x:4850,y:fy-250,r:20,used:false},
+  {x:5750,y:fy-230,r:20,used:false}
+ ];
+}
+layout();addEventListener('resize',layout);
+
+function railPoint(r,t){
+ t=clamp(t,0,1);const x=lerp(r.x1,r.x2,t);
+ if(r.shape==='arc'){const mx=(r.x1+r.x2)/2,my=(r.y1+r.y2)/2+r.bend,u=1-t;return{x:u*u*r.x1+2*u*t*mx+t*t*r.x2,y:u*u*r.y1+2*u*t*my+t*t*r.y2}}
+ if(r.shape==='halfpipe'){const q=(t-.5)*2;return{x,y:r.y1+r.depth*(1-q*q)}}
+ if(r.shape==='wave')return{x,y:r.y1+Math.sin(t*Math.PI*2*r.waves)*r.amp};
+ return{x,y:lerp(r.y1,r.y2,t)};
+}
+function railTangent(r,t){
+ const e=.01,a=railPoint(r,clamp(t-e,0,1)),b=railPoint(r,clamp(t+e,0,1));
+ const dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return{x:dx/l,y:dy/l};
+}
+function closestRail(){
+ let best=null,bd=9999,bt=0;
+ for(const r of rails){
+  if(P.x<r.x1-30||P.x>r.x2+30)continue;
+  const t=clamp((P.x-r.x1)/(r.x2-r.x1),0,1),p=railPoint(r,t);
+  const d=Math.abs(P.y+P.r-p.y);
+  if(d<bd){best=r;bd=d;bt=t}
+ }
+ return {r:best,d:bd,t:bt};
+}
+function burst(x,y,n=12){
+ for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=Math.random()*3;state.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.5+Math.random()*.3})}
+}
+function flash(big,small){
+ UI.msgBig.textContent=big;UI.msgSmall.textContent=small;UI.message.classList.add('show');state.msgT=1.4;
+}
+
+function reset(){
+ state.running=true;state.paused=false;state.time=0;state.score=0;state.cameraX=0;state.shake=0;state.msgT=0;state.particles=[];
+ layout();
+ P.x=120;P.y=floorY()-P.r;P.vx=0;P.vy=0;P.dashCd=0;P.air=0;P.momentum=0;
+ UI.intro.style.display='none';UI.end.classList.remove('show');setPause(false);flash('SUPERFICIE','aprende a moverte');
+}
+function setPause(v){state.paused=v;UI.pauseLayer.classList.toggle('show',v);UI.pause.textContent=v?'REANUDAR ▶':'PAUSA Ⅱ'}
+function togglePause(){if(state.running)setPause(!state.paused)}
+UI.start.addEventListener('click',reset);UI.restart.addEventListener('click',reset);UI.pause.addEventListener('click',togglePause);
+
+addEventListener('keydown',e=>{
+ if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+ if(e.code==='KeyP'){togglePause();return}
+ keys.add(e.code);
+ if((e.code==='Space'||e.code==='KeyW'||e.code==='ArrowUp')&&state.running&&!state.paused){
+  if(P.y-P.r<=1){P.y=P.r;P.vy=0}
+  else{P.vy=-10.3*Math.max(.62,1-P.air*.07);P.air++;burst(P.x-state.cameraX,P.y,10)}
+ }
+ if((e.code==='ShiftLeft'||e.code==='ShiftRight')&&state.running&&!state.paused&&P.dashCd<=0){
+  const dir=(keys.has('KeyA')||keys.has('ArrowLeft'))?-1:1;P.vx+=10.5*dir;P.dashCd=.65;state.shake=2.5;burst(P.x-state.cameraX,P.y,16)
+ }
+},{passive:false});
+addEventListener('keyup',e=>keys.delete(e.code));
+
+function update(dt){
+ if(!state.running||state.paused)return;
+ state.time+=dt;P.dashCd=Math.max(0,P.dashCd-dt);
+ if(state.msgT>0){state.msgT-=dt;if(state.msgT<=0)UI.message.classList.remove('show')}
+
+ const move=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
+ P.vx+=move*.58*60*dt;P.vx*=Math.pow(.90,60*dt);
+ if(P.vx<1.7)P.vx+=.035*60*dt;
+ P.vx=clamp(P.vx,-6.2,10.5);
+ P.vy+=.58*60*dt;P.vy=clamp(P.vy,-15,16);
+
+ const oldY=P.y;
+ P.x+=P.vx*60*dt;P.y+=P.vy*60*dt;
+ if(P.y<P.r){P.y=P.r;if(P.vy<0)P.vy=0}
+ const ground=floorY()-P.r;
+ if(P.y>ground){P.y=ground;P.vy=0;P.air=0}
+
+ for(const p of platforms){
+  if(P.vy>=0&&oldY+P.r<=p.y&&P.y+P.r>=p.y&&P.x+P.r>p.x&&P.x-P.r<p.x+p.w){
+   P.y=p.y-P.r;P.vy=-6.9;P.air=0;state.score+=10;
+  }
+ }
+
+ const hit=closestRail();
+ if(hit.r&&hit.d<15&&P.vy>=-3){
+  const p=railPoint(hit.r,hit.t),tan=railTangent(hit.r,hit.t);
+  P.y=p.y-P.r;
+  const speed=Math.max(6.2,Math.hypot(P.vx,P.vy));
+  P.vx=tan.x*speed*1.03;P.vy=tan.y*speed;
+  P.air=0;state.score+=4;
+ }
+
+ for(const r of state.rings){
+  if(r.used)continue;
+  if((P.x-r.x)**2+(P.y-r.y)**2<(P.r+r.r)**2){
+   r.used=true;P.vx+=3.4;P.vy-=2.2;state.score+=100;burst(r.x-state.cameraX,r.y,20);
+  }
+ }
+
+ P.momentum=Math.hypot(P.vx,P.vy);
+ state.cameraX=lerp(state.cameraX,Math.max(0,P.x-W*(.28+Math.min(.12,P.momentum/100))),.075);
+ state.shake=Math.max(0,state.shake-dt*20);
+ state.score+=dt*(8+P.momentum*.5);
+
+ for(const p of state.particles){p.x+=p.vx*60*dt;p.y+=p.vy*60*dt;p.vx*=.98;p.vy*=.98;p.life-=dt}
+ state.particles=state.particles.filter(p=>p.life>0);
+
+ if(P.x>LEVEL_END){
+  state.running=false;UI.end.classList.add('show');UI.endText.textContent='PUNTOS '+String(Math.floor(state.score)).padStart(6,'0')+' · momentum máximo aprendido';
+ }
+
+ UI.score.textContent='PUNTOS '+String(Math.floor(state.score)).padStart(6,'0');
+ UI.momentum.textContent='MOMENTUM '+P.momentum.toFixed(1);
+ UI.progress.textContent=Math.floor(clamp(P.x/LEVEL_END,0,1)*100)+'%';
+}
+
+function render(){
+ ctx.fillStyle='#f3f3f0';ctx.fillRect(0,0,W,H);
+ const sx=(Math.random()-.5)*state.shake,sy=(Math.random()-.5)*state.shake;ctx.save();ctx.translate(sx,sy);
+
+ // Parallax
+ ctx.fillStyle='#080808';ctx.globalAlpha=.06;
+ for(let layer=0;layer<3;layer++){
+  const spacing=150+layer*80,off=(state.cameraX*(.06+layer*.08))%spacing;
+  for(let i=-1;i<W/spacing+2;i++){
+   const x=i*spacing-off,h=90+layer*70+(Math.sin((i+layer)*1.5)**2)*80;
+   ctx.fillRect(x,floorY()-h,1+layer,h);
+  }
+ }
+ ctx.globalAlpha=1;
+
+ // grid
+ ctx.strokeStyle='#080808';ctx.globalAlpha=.08;ctx.lineWidth=1;
+ const grid=90,go=(state.cameraX*.1)%grid;
+ for(let gx=-go;gx<W;gx+=grid){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke()}
+ for(let gy=70;gy<H;gy+=grid){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke()}
+ ctx.globalAlpha=1;
+
+ ctx.fillStyle='#080808';ctx.globalAlpha=.16;ctx.fillRect(0,0,W,1);ctx.globalAlpha=.9;ctx.fillRect(0,floorY(),W,2);ctx.globalAlpha=1;
+
+ for(const p of platforms){
+  const x=p.x-state.cameraX;if(x+p.w<0||x>W)continue;ctx.fillStyle='#080808';ctx.globalAlpha=.72;ctx.fillRect(x,p.y,p.w,p.h);ctx.globalAlpha=1;
+ }
+
+ for(const r of rails){
+  const a=r.x1-state.cameraX,b=r.x2-state.cameraX;if(b<-50||a>W+50)continue;
+  ctx.strokeStyle='#080808';ctx.lineWidth=4;ctx.globalAlpha=.75;ctx.beginPath();
+  const steps=r.shape==='line'?2:32;
+  for(let i=0;i<steps;i++){const p=railPoint(r,i/(steps-1)),x=p.x-state.cameraX;i?ctx.lineTo(x,p.y):ctx.moveTo(x,p.y)}
+  ctx.stroke();ctx.globalAlpha=.14;ctx.lineWidth=11;ctx.stroke();ctx.globalAlpha=1;
+ }
+
+ for(const r of state.rings){
+  if(r.used)continue;const x=r.x-state.cameraX;if(x<-40||x>W+40)continue;
+  ctx.strokeStyle='#080808';ctx.lineWidth=2;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(x,r.y,r.r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+ }
+
+ // finish gate
+ const finishX=LEVEL_END-state.cameraX;
+ if(finishX>-20&&finishX<W+20){
+  ctx.strokeStyle='#080808';ctx.globalAlpha=.7;ctx.setLineDash([5,8]);ctx.beginPath();ctx.moveTo(finishX,60);ctx.lineTo(finishX,floorY());ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+ }
+
+ // player
+ const px=P.x-state.cameraX;ctx.fillStyle='#080808';ctx.beginPath();ctx.arc(px,P.y,P.r,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#f3f3f0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,P.y,5.5,0,Math.PI*2);ctx.stroke();
+
+ for(const p of state.particles){ctx.globalAlpha=clamp(p.life/.8,0,1);ctx.fillStyle='#080808';ctx.fillRect(p.x,p.y,2,2)}ctx.globalAlpha=1;
+
+ ctx.restore();
+
+ const pr=clamp(P.x/LEVEL_END,0,1);ctx.fillStyle='#080808';ctx.globalAlpha=.16;ctx.fillRect(0,H-3,W,3);ctx.globalAlpha=1;ctx.fillRect(0,H-3,W*pr,3);
+}
+
+let last=performance.now();
+function loop(now){
+ const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(loop)
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

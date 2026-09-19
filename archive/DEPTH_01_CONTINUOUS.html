@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DEPTH 01 — Continuous Descent</title>
+<style>
+  :root{
+    --bg:#050505;
+    --fg:#f7f7f7;
+    --muted:#8f8f8f;
+    --line:#2c2c2c;
+    --panel:rgba(10,10,10,.78);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  canvas{display:block;width:100vw;height:100vh;background:#050505}
+  #hud{
+    position:fixed;inset:0 0 auto 0;z-index:10;
+    display:grid;grid-template-columns:1fr auto;gap:12px;
+    padding:14px 16px;pointer-events:none;
+  }
+  .hud-left{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
+  .pill{
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(0,0,0,.46);
+    backdrop-filter:blur(8px);
+    padding:8px 10px;border-radius:999px;
+    font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  }
+  #pauseBtn{
+    pointer-events:auto;
+    min-width:96px;height:40px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.26);background:#fff;color:#000;
+    font-weight:800;letter-spacing:.07em;cursor:pointer;
+  }
+  #pauseBtn:hover{filter:brightness(.9)}
+  #pauseBtn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+  #depthBanner{
+    position:fixed;left:50%;top:17%;transform:translateX(-50%);
+    z-index:9;text-align:center;pointer-events:none;opacity:0;
+    transition:opacity .3s ease;
+  }
+  #depthBanner.show{opacity:1}
+  #depthBanner .num{font-size:clamp(48px,9vw,120px);font-weight:900;line-height:.8;letter-spacing:-.06em}
+  #depthBanner .label{font-size:12px;letter-spacing:.45em;text-transform:uppercase;color:#aaa;margin-top:12px}
+  #centerMessage{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    z-index:12;text-align:center;pointer-events:none;width:min(92vw,650px);
+  }
+  #centerMessage h1{font-size:clamp(54px,12vw,140px);line-height:.8;margin:0;letter-spacing:-.07em}
+  #centerMessage p{color:#aaa;line-height:1.5}
+  #centerMessage .hint{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#d5d5d5}
+  #startOverlay{
+    position:fixed;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.04),transparent 34%),#050505;
+    padding:24px;
+  }
+  .startCard{width:min(780px,100%);text-align:center}
+  .startCard .logo{font-weight:950;font-size:clamp(58px,12vw,130px);letter-spacing:-.07em;line-height:.8}
+  .startCard .sub{margin:20px auto 26px;color:#aaa;max-width:620px;font-size:15px;line-height:1.55}
+  .controls{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 auto 24px}
+  .key{border:1px solid #292929;border-radius:999px;padding:7px 10px;font-size:12px;color:#cfcfcf}
+  #startBtn{
+    border:0;border-radius:999px;background:#fff;color:#000;padding:14px 24px;
+    min-width:220px;font-weight:900;letter-spacing:.1em;cursor:pointer;
+  }
+  #pauseOverlay{
+    position:fixed;inset:0;z-index:14;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.62);backdrop-filter:blur(8px);pointer-events:none
+  }
+  #pauseOverlay.show{display:flex}
+  #pauseOverlay .pauseTitle{font-size:clamp(50px,10vw,120px);font-weight:950;letter-spacing:-.06em}
+  #combo{
+    position:fixed;right:18px;bottom:18px;z-index:10;text-align:right;pointer-events:none;
+    font-weight:950;font-size:clamp(24px,5vw,56px);letter-spacing:-.04em;
+  }
+  #combo small{display:block;font-size:10px;letter-spacing:.22em;color:#888;text-transform:uppercase}
+  #toast{
+    position:fixed;left:18px;bottom:18px;z-index:10;pointer-events:none;
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#aaa;
+  }
+  @media(max-width:650px){
+    #hud{grid-template-columns:1fr auto;padding:10px}
+    .pill{font-size:10px;padding:7px 8px}
+    #pauseBtn{min-width:74px;height:36px;font-size:11px}
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="hud-left">
+    <div class="pill" id="depthText">DEPTH 01 · SUPERFICIE</div>
+    <div class="pill" id="hpText">VIDA 3</div>
+    <div class="pill" id="scoreText">PUNTOS 000000</div>
+    <div class="pill" id="progressText">PROGRESO 0%</div>
+    <div class="pill" id="powerText">IMPULSO ×1.00</div>
+  </div>
+  <button id="pauseBtn" type="button" aria-label="Pausar juego">PAUSA Ⅱ</button>
+</div>
+
+<div id="depthBanner">
+  <div class="num" id="depthNum">01</div>
+  <div class="label" id="depthName">SUPERFICIE</div>
+</div>
+
+<div id="combo"><small>combo</small><span id="comboText">×1</span></div>
+<div id="toast">A/D mover · W/ESPACIO saltar · SHIFT dash · RATÓN disparar</div>
+
+<div id="centerMessage"></div>
+
+<div id="pauseOverlay">
+  <div class="pauseTitle">PAUSA</div>
+</div>
+
+<div id="startOverlay">
+  <div class="startCard">
+    <div class="logo">DEPTH<br>/01</div>
+    <div class="sub">
+      Una esfera. Cinco profundidades. Sin pantallas de carga. Sin pausas entre niveles.
+      Conserva el impulso, encadena saltos, destruye amenazas y atraviesa el vacío.
+    </div>
+    <div class="controls">
+      <span class="key">A / D mover</span>
+      <span class="key">W / ESPACIO salto infinito</span>
+      <span class="key">SHIFT dash</span>
+      <span class="key">RATÓN disparar</span>
+      <span class="key">P pausa</span>
+    </div>
+    <button id="startBtn" type="button">INICIAR DESCENSO</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d', { alpha:false });
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  const ui = {
+    depthText: document.getElementById('depthText'),
+    hpText: document.getElementById('hpText'),
+    scoreText: document.getElementById('scoreText'),
+    progressText: document.getElementById('progressText'),
+    powerText: document.getElementById('powerText'),
+    comboText: document.getElementById('comboText'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    pauseOverlay: document.getElementById('pauseOverlay'),
+    startOverlay: document.getElementById('startOverlay'),
+    startBtn: document.getElementById('startBtn'),
+    depthBanner: document.getElementById('depthBanner'),
+    depthNum: document.getElementById('depthNum'),
+    depthName: document.getElementById('depthName'),
+    centerMessage: document.getElementById('centerMessage')
+  };
+
+  let W = 1280, H = 720;
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.floor(W*dpr);
+    canvas.height = Math.floor(H*dpr);
+    canvas.style.width = W+'px';
+    canvas.style.height = H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener('resize', resize); resize();
+
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const dist2 = (ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy};
+  const rand = (a,b)=>a+Math.random()*(b-a);
+
+  const DEPTHS = [
+    {name:'SUPERFICIE', floor:0,    bg:'#f1f1f1', fg:'#0a0a0a', grav:0.62, enemyRate:0.75},
+    {name:'FALLA',      floor:2200, bg:'#bfbfbf', fg:'#080808', grav:0.68, enemyRate:0.90},
+    {name:'ABISMO',     floor:4400, bg:'#5f5f5f', fg:'#f5f5f5', grav:0.73, enemyRate:1.05},
+    {name:'NÚCLEO',     floor:6600, bg:'#202020', fg:'#f6f6f6', grav:0.77, enemyRate:1.20},
+    {name:'VACÍO',      floor:8800, bg:'#050505', fg:'#ffffff', grav:0.80, enemyRate:1.35}
+  ];
+  const WORLD_END = 11000;
+
+  const state = {
+    started:false, paused:false, over:false,
+    time:0, score:0, combo:1, comboTimer:0,
+    cameraY:0, shake:0, currentDepth:-1,
+    bullets:[], enemies:[], particles:[], rings:[], pickups:[], platforms:[],
+    nextSpawnY:350, boss:null, bannerTimer:0
+  };
+
+  const keys = new Set();
+  const mouse = {x:W*.75,y:H*.5,down:false};
+
+  const player = {
+    x:W*.32, y:110, vx:0, vy:0, r:14, hp:3,
+    dashCd:0, inv:0, fireCd:0, trail:[], speedBoost:1,
+    worldY:0
+  };
+
+  function worldToScreenY(worldY){ return worldY - state.cameraY; }
+  function screenToWorldY(y){ return y + state.cameraY; }
+
+  function depthIndexFor(y){
+    return clamp(Math.floor(y/2200),0,4);
+  }
+
+  function reset(){
+    state.started = true; state.paused=false; state.over=false; state.time=0;
+    state.score=0; state.combo=1; state.comboTimer=0; state.cameraY=0; state.shake=0;
+    state.currentDepth=-1; state.bullets=[]; state.enemies=[]; state.particles=[];
+    state.rings=[]; state.pickups=[]; state.platforms=[]; state.nextSpawnY=300; state.boss=null;
+    player.x=W*.32; player.y=screenToWorldY(H*.28); player.worldY=player.y;
+    player.vx=0; player.vy=0; player.hp=3; player.dashCd=0; player.inv=0; player.fireCd=0;
+    player.trail=[]; player.speedBoost=1;
+    generateAhead(0, WORLD_END);
+    ui.startOverlay.style.display='none';
+    ui.centerMessage.innerHTML='';
+    ui.pauseOverlay.classList.remove('show');
+    ui.pauseBtn.textContent='PAUSA Ⅱ';
+    showDepth(0, true);
+  }
+
+  function generateAhead(startY, endY){
+    for(let y=Math.max(280,startY); y<endY; y+=rand(130,250)){
+      const d = depthIndexFor(y);
+      const width = rand(95,210);
+      const x = rand(40,Math.max(41,W-width-40));
+      if(Math.random()<0.66){
+        state.platforms.push({
+          x,y,w:width,h:8,
+          drift:Math.random()<0.2 ? rand(-22,22) : 0,
+          phase:Math.random()*Math.PI*2
+        });
+      }
+      if(Math.random()<0.36){
+        state.rings.push({x:rand(70,W-70),y:y-rand(20,80),r:20,hit:false,pulse:Math.random()*6});
+      }
+      if(Math.random()<0.22){
+        state.pickups.push({x:rand(60,W-60),y:y-rand(10,90),r:9,type:Math.random()<.65?'charge':'heart',taken:false});
+      }
+      const rate = DEPTHS[d].enemyRate;
+      if(Math.random()<0.42*rate){
+        const kinds = d<2 ? ['drone','drone','turret'] : d<4 ? ['drone','turret','hunter'] : ['hunter','hunter','turret'];
+        const kind = kinds[(Math.random()*kinds.length)|0];
+        spawnEnemy(kind, rand(70,W-70), y-rand(10,120), d);
+      }
+    }
+  }
+
+  function spawnEnemy(kind,x,y,d){
+    const base = {kind,x,y,vx:0,vy:0,alive:true,hit:0,d,phase:Math.random()*10};
+    if(kind==='drone') Object.assign(base,{r:12,hp:1});
+    if(kind==='turret') Object.assign(base,{r:15,hp:2,shot:rand(.4,1.4)});
+    if(kind==='hunter') Object.assign(base,{r:16,hp:3,shot:rand(.3,.9)});
+    state.enemies.push(base);
+  }
+
+  function spawnBoss(y){
+    state.boss = {x:W*.72,y,r:44,hp:40,maxHp:40,shot:.4,phase:0,alive:true};
+  }
+
+  function showDepth(index, instant=false){
+    if(index===state.currentDepth && !instant) return;
+    state.currentDepth=index;
+    ui.depthNum.textContent=String(index+1).padStart(2,'0');
+    ui.depthName.textContent=DEPTHS[index].name;
+    ui.depthBanner.classList.add('show');
+    state.bannerTimer=1.45;
+    burst(W*.5, H*.28, 40, '#ffffff', 2.8);
+    state.shake=Math.max(state.shake,5);
+  }
+
+  function togglePause(){
+    if(!state.started || state.over) return;
+    state.paused=!state.paused;
+    ui.pauseOverlay.classList.toggle('show',state.paused);
+    ui.pauseBtn.textContent=state.paused?'REANUDAR ▶':'PAUSA Ⅱ';
+  }
+
+  ui.pauseBtn.addEventListener('click', togglePause);
+  ui.startBtn.addEventListener('click', reset);
+
+  window.addEventListener('keydown',e=>{
+    if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+    if(e.code==='KeyP'){togglePause();return}
+    keys.add(e.code);
+    if((e.code==='Space'||e.code==='KeyW'||e.code==='ArrowUp') && state.started && !state.paused) jump();
+    if((e.code==='ShiftLeft'||e.code==='ShiftRight') && state.started && !state.paused) dash();
+    if(e.code==='KeyR' && state.over) reset();
+  },{passive:false});
+  window.addEventListener('keyup',e=>keys.delete(e.code));
+
+  canvas.addEventListener('pointermove',e=>{
+    const r=canvas.getBoundingClientRect();
+    mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top;
+  });
+  canvas.addEventListener('pointerdown',()=>mouse.down=true);
+  window.addEventListener('pointerup',()=>mouse.down=false);
+
+  function jump(){
+    player.vy = -10.5 * player.speedBoost;
+    burst(player.x, worldToScreenY(player.y), 10, '#fff', 2);
+  }
+
+  function dash(){
+    if(player.dashCd>0) return;
+    const dir = keys.has('KeyA')||keys.has('ArrowLeft') ? -1 : 1;
+    player.vx += 11*dir;
+    player.vy *= .5;
+    player.dashCd=.65;
+    player.inv=.22;
+    state.shake=Math.max(state.shake,3);
+    burst(player.x,worldToScreenY(player.y),18,'#fff',4);
+  }
+
+  function fire(){
+    if(player.fireCd>0) return;
+    const sy = worldToScreenY(player.y);
+    let dx=mouse.x-player.x, dy=mouse.y-sy;
+    const len=Math.hypot(dx,dy)||1; dx/=len;dy/=len;
+    state.bullets.push({x:player.x,y:player.y,vx:dx*12,vy:dy*12,r:3,life:1.2,owner:'p'});
+    player.fireCd=.105;
+  }
+
+  function enemyFire(e, speed=5){
+    const dx=player.x-e.x, dy=player.y-e.y;
+    const len=Math.hypot(dx,dy)||1;
+    state.bullets.push({x:e.x,y:e.y,vx:dx/len*speed,vy:dy/len*speed,r:4,life:2.8,owner:'e'});
+  }
+
+  function bossFire(b){
+    const n=10;
+    for(let i=0;i<n;i++){
+      const a=i/n*Math.PI*2+b.phase;
+      state.bullets.push({x:b.x,y:b.y,vx:Math.cos(a)*4.6,vy:Math.sin(a)*4.6,r:4,life:4,owner:'e'});
+    }
+  }
+
+  function burst(x,y,count,color,speed){
+    for(let i=0;i<count;i++){
+      const a=Math.random()*Math.PI*2,s=Math.random()*speed;
+      state.particles.push({
+        x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,
+        life:rand(.25,.8),max:1,r:rand(1,3),color
+      });
+    }
+  }
+
+  function damagePlayer(){
+    if(player.inv>0) return;
+    player.hp--;
+    player.inv=1.0;
+    state.combo=1;state.comboTimer=0;
+    state.shake=10;
+    burst(player.x,worldToScreenY(player.y),28,'#fff',5);
+    if(player.hp<=0){
+      state.over=true;
+      ui.centerMessage.innerHTML='<h1>CAÍDA</h1><p>El descenso terminó. Pulsa <b>R</b> para reiniciar.</p><div class="hint">PUNTOS '+String(Math.floor(state.score)).padStart(6,'0')+'</div>';
+    }
+  }
+
+  function killEnemy(e){
+    e.alive=false;
+    state.combo=Math.min(12,state.combo+1);
+    state.comboTimer=2.2;
+    state.score += 100*state.combo;
+    state.shake=Math.max(state.shake,4);
+    burst(e.x,worldToScreenY(e.y),18,'#fff',4.5);
+  }
+
+  function update(dt){
+    if(!state.started || state.paused || state.over) return;
+    state.time+=dt;
+    player.dashCd=Math.max(0,player.dashCd-dt);
+    player.fireCd=Math.max(0,player.fireCd-dt);
+    player.inv=Math.max(0,player.inv-dt);
+    if(state.comboTimer>0) state.comboTimer-=dt; else state.combo=1;
+    if(state.bannerTimer>0){
+      state.bannerTimer-=dt;
+      if(state.bannerTimer<=0) ui.depthBanner.classList.remove('show');
+    }
+
+    const currentD=depthIndexFor(player.y);
+    showDepth(currentD);
+
+    const move=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
+    player.vx += move*0.75*dt*60;
+    player.vx *= Math.pow(.88,dt*60);
+    player.vx = clamp(player.vx,-9.2*player.speedBoost,9.2*player.speedBoost);
+
+    const gravity=DEPTHS[currentD].grav;
+    player.vy += gravity*dt*60;
+    if(keys.has('KeyS')||keys.has('ArrowDown')) player.vy += .34*dt*60;
+    player.vy=clamp(player.vy,-15,16);
+
+    const prevY=player.y;
+    player.x += player.vx*dt*60;
+    player.y += player.vy*dt*60;
+    player.x=clamp(player.x,player.r,W-player.r);
+
+    for(const p of state.platforms){
+      const px=p.x+Math.sin(state.time*.8+p.phase)*p.drift;
+      if(player.vy>0 && prevY+player.r<=p.y && player.y+player.r>=p.y &&
+         player.x+player.r>px && player.x-player.r<px+p.w){
+        player.y=p.y-player.r; player.vy=-7.8;
+        state.score+=8*state.combo;
+      }
+    }
+
+    if(player.y < state.cameraY+H*.26) state.cameraY=lerp(state.cameraY,player.y-H*.26,.08);
+    if(player.y > state.cameraY+H*.48) state.cameraY=lerp(state.cameraY,player.y-H*.48,.12);
+
+    player.worldY=player.y;
+    if(player.y<0){player.y=0;player.vy=2}
+    if(player.y>WORLD_END+220){
+      state.over=true;
+      ui.centerMessage.innerHTML='<h1>DESCENSO<br>COMPLETO</h1><p>Has atravesado las cinco profundidades sin interrupciones.</p><div class="hint">PUNTOS '+String(Math.floor(state.score)).padStart(6,'0')+' · R PARA REINICIAR</div>';
+    }
+
+    if(currentD===4 && player.y>10100 && !state.boss) spawnBoss(10430);
+
+    if(mouse.down) fire();
+
+    for(const r of state.rings){
+      if(r.hit) continue;
+      r.pulse+=dt*4;
+      if(dist2(player.x,player.y,r.x,r.y)<(player.r+r.r)*(player.r+r.r)){
+        r.hit=true; player.speedBoost=Math.min(1.6,player.speedBoost+.08);
+        player.vy-=3.8; state.score+=75*state.combo;
+        state.combo=Math.min(12,state.combo+1);state.comboTimer=2.3;
+        burst(r.x,worldToScreenY(r.y),26,'#fff',5);
+      }
+    }
+
+    for(const p of state.pickups){
+      if(p.taken) continue;
+      if(dist2(player.x,player.y,p.x,p.y)<(player.r+p.r+5)**2){
+        p.taken=true;
+        if(p.type==='heart') player.hp=Math.min(5,player.hp+1);
+        else player.speedBoost=Math.min(1.75,player.speedBoost+.12);
+        state.score+=120;
+        burst(p.x,worldToScreenY(p.y),22,'#fff',4);
+      }
+    }
+
+    for(const e of state.enemies){
+      if(!e.alive) continue;
+      e.hit=Math.max(0,e.hit-dt);
+      e.phase+=dt;
+      if(e.kind==='drone'){
+        e.x+=Math.sin(e.phase*1.8)*1.2;
+        e.y+=Math.sin(e.phase*2.4)*.35;
+      }else if(e.kind==='turret'){
+        e.shot-=dt;
+        if(e.shot<=0 && Math.abs(e.y-player.y)<H*.75){enemyFire(e,4.6);e.shot=1.2}
+      }else if(e.kind==='hunter'){
+        const dx=player.x-e.x,dy=player.y-e.y,dd=Math.hypot(dx,dy)||1;
+        e.x+=dx/dd*1.6*dt*60; e.y+=dy/dd*1.2*dt*60;
+        e.shot-=dt;
+        if(e.shot<=0 && dd<500){enemyFire(e,5.4);e.shot=.9}
+      }
+      if(dist2(player.x,player.y,e.x,e.y)<(player.r+e.r)**2) damagePlayer();
+    }
+
+    if(state.boss && state.boss.alive){
+      const b=state.boss;b.phase+=dt;
+      b.x=W*.5+Math.sin(b.phase*.8)*W*.28;
+      b.y=10430+Math.cos(b.phase*1.2)*90;
+      b.shot-=dt;
+      if(b.shot<=0){bossFire(b);b.shot=.75}
+      if(dist2(player.x,player.y,b.x,b.y)<(player.r+b.r)**2) damagePlayer();
+    }
+
+    for(const b of state.bullets){
+      b.x+=b.vx*dt*60;b.y+=b.vy*dt*60;b.life-=dt;
+      if(b.owner==='p'){
+        for(const e of state.enemies){
+          if(!e.alive) continue;
+          if(dist2(b.x,b.y,e.x,e.y)<(b.r+e.r)**2){
+            b.life=0;e.hp--;e.hit=.09;
+            if(e.hp<=0) killEnemy(e); else burst(e.x,worldToScreenY(e.y),5,'#fff',2);
+            break;
+          }
+        }
+        const boss=state.boss;
+        if(boss&&boss.alive&&b.life>0&&dist2(b.x,b.y,boss.x,boss.y)<(b.r+boss.r)**2){
+          b.life=0;boss.hp--;state.score+=15*state.combo;state.comboTimer=2;
+          burst(boss.x,worldToScreenY(boss.y),5,'#fff',2);
+          if(boss.hp<=0){
+            boss.alive=false;state.score+=5000;state.combo=12;
+            burst(boss.x,worldToScreenY(boss.y),90,'#fff',8);
+          }
+        }
+      } else {
+        if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2){b.life=0;damagePlayer()}
+      }
+    }
+    state.bullets=state.bullets.filter(b=>b.life>0 && b.x>-80&&b.x<W+80&&b.y>state.cameraY-200&&b.y<state.cameraY+H+500);
+
+    for(const p of state.particles){
+      p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.vx*=.98;p.vy*=.98;p.life-=dt;
+    }
+    state.particles=state.particles.filter(p=>p.life>0);
+
+    player.trail.push({x:player.x,y:player.y,life:.34});
+    if(player.trail.length>22) player.trail.shift();
+    for(const t of player.trail) t.life-=dt;
+
+    state.shake=Math.max(0,state.shake-dt*22);
+    player.speedBoost=lerp(player.speedBoost,1,dt*.05);
+
+    const progress=clamp(player.y/WORLD_END,0,1);
+    state.score += dt*(10+progress*18)*state.combo;
+
+    updateUI(progress,currentD);
+  }
+
+  function updateUI(progress,d){
+    ui.depthText.textContent='DEPTH '+String(d+1).padStart(2,'0')+' · '+DEPTHS[d].name;
+    ui.hpText.textContent='VIDA '+player.hp;
+    ui.scoreText.textContent='PUNTOS '+String(Math.floor(state.score)).padStart(6,'0');
+    ui.progressText.textContent='PROGRESO '+Math.floor(progress*100)+'%';
+    ui.powerText.textContent='IMPULSO ×'+player.speedBoost.toFixed(2);
+    ui.comboText.textContent='×'+state.combo;
+  }
+
+  function drawGrid(fg,alpha){
+    ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=fg;ctx.lineWidth=1;
+    const spacing=80;
+    const off=(state.cameraY*.18)%spacing;
+    for(let y=-spacing+off;y<H+spacing;y+=spacing){
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    }
+    for(let x=0;x<W;x+=spacing){
+      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function render(){
+    const d=depthIndexFor(player.y);
+    const style=DEPTHS[d];
+    ctx.fillStyle=style.bg;ctx.fillRect(0,0,W,H);
+
+    const shakeX=(Math.random()-.5)*state.shake;
+    const shakeY=(Math.random()-.5)*state.shake;
+    ctx.save();ctx.translate(shakeX,shakeY);
+
+    drawGrid(style.fg, d===0?.08:d===1?.1:.12);
+
+    for(let i=0;i<22;i++){
+      const depthFactor=(i%5+1)/6;
+      const yy=((i*137 - state.cameraY*depthFactor*.15)%(H+220))-100;
+      ctx.globalAlpha=.06+.05*depthFactor;
+      ctx.fillStyle=style.fg;
+      ctx.fillRect((i*211)%W,yy,1+depthFactor*2,50+depthFactor*160);
+    }
+    ctx.globalAlpha=1;
+
+    for(const p of state.platforms){
+      const sy=worldToScreenY(p.y);if(sy<-40||sy>H+40)continue;
+      const px=p.x+Math.sin(state.time*.8+p.phase)*p.drift;
+      ctx.fillStyle=style.fg;ctx.globalAlpha=.75;
+      ctx.fillRect(px,sy,p.w,p.h);
+      ctx.globalAlpha=.17;ctx.fillRect(px,sy+10,p.w,1);
+      ctx.globalAlpha=1;
+    }
+
+    for(const r of state.rings){
+      if(r.hit) continue;
+      const sy=worldToScreenY(r.y);if(sy<-60||sy>H+60)continue;
+      ctx.strokeStyle=style.fg;ctx.lineWidth=2;
+      ctx.globalAlpha=.55+.25*Math.sin(r.pulse);
+      ctx.beginPath();ctx.arc(r.x,sy,r.r+Math.sin(r.pulse)*3,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=.2;ctx.beginPath();ctx.arc(r.x,sy,r.r+8,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+
+    for(const p of state.pickups){
+      if(p.taken)continue;const sy=worldToScreenY(p.y);if(sy<-40||sy>H+40)continue;
+      ctx.strokeStyle=style.fg;ctx.lineWidth=2;
+      ctx.beginPath();ctx.rect(p.x-7,sy-7,14,14);ctx.stroke();
+      if(p.type==='heart'){
+        ctx.fillStyle=style.fg;ctx.fillRect(p.x-1,sy-5,2,10);ctx.fillRect(p.x-5,sy-1,10,2);
+      }else{
+        ctx.beginPath();ctx.moveTo(p.x-5,sy+6);ctx.lineTo(p.x+1,sy);ctx.lineTo(p.x-1,sy);ctx.lineTo(p.x+5,sy-6);ctx.stroke();
+      }
+    }
+
+    for(const e of state.enemies){
+      if(!e.alive)continue;const sy=worldToScreenY(e.y);if(sy<-80||sy>H+80)continue;
+      ctx.save();ctx.translate(e.x,sy);
+      ctx.strokeStyle=style.fg;ctx.fillStyle=style.fg;ctx.lineWidth=2;
+      if(e.hit>0)ctx.globalAlpha=.3;
+      if(e.kind==='drone'){
+        ctx.beginPath();ctx.arc(0,0,e.r,0,Math.PI*2);ctx.stroke();
+        ctx.fillRect(-3,-3,6,6);ctx.beginPath();ctx.moveTo(-20,0);ctx.lineTo(-12,0);ctx.moveTo(12,0);ctx.lineTo(20,0);ctx.stroke();
+      }else if(e.kind==='turret'){
+        ctx.strokeRect(-12,-12,24,24);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-24);ctx.stroke();ctx.beginPath();ctx.arc(0,-25,3,0,Math.PI*2);ctx.fill();
+      }else{
+        ctx.rotate(e.phase);ctx.beginPath();
+        for(let i=0;i<6;i++){const a=i/6*Math.PI*2;const rr=i%2?8:18;const x=Math.cos(a)*rr,y=Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+        ctx.closePath();ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if(state.boss&&state.boss.alive){
+      const b=state.boss,sy=worldToScreenY(b.y);
+      if(sy>-120&&sy<H+120){
+        ctx.save();ctx.translate(b.x,sy);ctx.rotate(b.phase*.35);
+        ctx.strokeStyle=style.fg;ctx.lineWidth=3;
+        ctx.beginPath();
+        for(let i=0;i<12;i++){
+          const a=i/12*Math.PI*2,rr=i%2?28:52;
+          const x=Math.cos(a)*rr,y=Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)
+        }
+        ctx.closePath();ctx.stroke();
+        ctx.restore();
+        const bw=Math.min(360,W*.5),bx=(W-bw)/2,by=82;
+        ctx.globalAlpha=.3;ctx.fillStyle=style.fg;ctx.fillRect(bx,by,bw,5);
+        ctx.globalAlpha=1;ctx.fillRect(bx,by,bw*(b.hp/b.maxHp),5);
+      }
+    }
+
+    for(const b of state.bullets){
+      const sy=worldToScreenY(b.y);if(sy<-20||sy>H+20)continue;
+      ctx.fillStyle=style.fg;ctx.globalAlpha=b.owner==='p'?1:.7;
+      ctx.beginPath();ctx.arc(b.x,sy,b.r,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+    }
+
+    for(const t of player.trail){
+      const sy=worldToScreenY(t.y);
+      ctx.fillStyle=style.fg;ctx.globalAlpha=clamp(t.life/.34,0,.26);
+      ctx.beginPath();ctx.arc(t.x,sy,player.r*(t.life/.34),0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+
+    if(player.inv<=0 || Math.floor(state.time*18)%2===0){
+      const sy=worldToScreenY(player.y);
+      ctx.fillStyle=style.fg;
+      ctx.beginPath();ctx.arc(player.x,sy,player.r,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=style.bg;ctx.lineWidth=2;ctx.beginPath();ctx.arc(player.x,sy,6,0,Math.PI*2);ctx.stroke();
+    }
+
+    for(const p of state.particles){
+      ctx.globalAlpha=clamp(p.life/.8,0,1);
+      ctx.fillStyle=p.color;
+      ctx.fillRect(p.x, p.y, p.r,p.r);
+    }
+    ctx.globalAlpha=1;
+
+    const prog=clamp(player.y/WORLD_END,0,1);
+    ctx.globalAlpha=.25;ctx.fillStyle=style.fg;ctx.fillRect(0,H-2,W,2);
+    ctx.globalAlpha=1;ctx.fillRect(0,H-3,W*prog,3);
+
+    ctx.restore();
+  }
+
+  let last=performance.now();
+  function loop(now){
+    const dt=Math.min(.033,(now-last)/1000);last=now;
+    update(dt);render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

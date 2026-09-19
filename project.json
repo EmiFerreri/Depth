@@ -1,0 +1,24 @@
+{
+  "name": "DEPTH",
+  "version": "0.1.0-prototype",
+  "levels_planned": 100,
+  "rounds": 10,
+  "genre": [
+    "precision platformer",
+    "momentum arcade",
+    "2D"
+  ],
+  "visual_identity": "premium monochrome minimalism with functional color",
+  "core_mechanic": "momentum and flow",
+  "current_playables": [
+    "game/levels/level-001.html",
+    "game/levels/level-002.html",
+    "game/levels/level-003-pro-minimal.html",
+    "game/depth-100-prototype.html",
+    "game/levels/level-004-pro.html",
+    "game/levels/level-005-pro.html",
+    "game/levels/level-006-pro.html",
+    "game/levels/level-007-pro.html",
+    "game/levels/level-007b-alt-scenario.html"
+  ]
+}
