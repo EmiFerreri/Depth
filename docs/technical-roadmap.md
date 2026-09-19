@@ -1,5 +1,10 @@
 # DEPTH — Technical Roadmap
 
+> This is the original long-term plan. Version 0.2 now implements a connected
+> fixed-step engine, checkpoints, seeded routes, touch controls and local tests.
+> See [architecture and current limits](ARCHITECTURE.md) and the
+> [audit](AUDIT-2026-09-19.md) before treating items below as completed.
+
 ## Phase 1 — Movement Foundation
 - fixed timestep physics
 - momentum conservation

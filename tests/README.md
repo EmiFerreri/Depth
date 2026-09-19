@@ -1,12 +1,8 @@
-# Tests
+# Validation
 
-Planned test suites:
-- rail entry/exit
-- loops
-- high-speed tunneling
-- ceiling bounds
-- resize
-- pause/resume
-- deterministic generation
-- power-up combinations
-- impossible chunk detection
+Run `npm test` for Node regression tests, and `npm run check` for syntax/JSON checks.
+No dependency installation is needed for these commands.
+
+Real Chromium UI checks are optional: see [playtest instructions](../docs/PLAYTEST.md).
+The implementation environment could not complete that browser gate; it is not
+reported as passed. Browser screenshots must be inspected manually.

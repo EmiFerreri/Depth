@@ -1,0 +1,6 @@
+{
+  "name": "depth-game", "version": "0.2.0", "private": true, "type": "module",
+  "description": "A minimalist momentum platformer with a deterministic local game engine.",
+  "scripts": { "start": "node tools/serve.mjs", "test": "node --test tests/engine.test.js tests/input.test.js tests/legacy.test.js", "check": "node tools/check.mjs" },
+  "engines": { "node": ">=20" }
+}

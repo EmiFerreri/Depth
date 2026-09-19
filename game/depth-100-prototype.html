@@ -169,7 +169,7 @@ function mulberry32(a){
     return ((t^t>>>14)>>>0)/4294967296;
   }
 }
-const RNG=mulberry32(0xD3E7A100);
+let RNG=mulberry32(0xD3E7A100);
 const rr=(a,b)=>a+RNG()*(b-a);
 
 function levelIndexAt(x){return clamp(Math.floor(x/LEVEL_LEN),0,LEVEL_COUNT-1)}
@@ -209,6 +209,7 @@ const P={
 };
 
 function reset(){
+  RNG=mulberry32(0xD3E7A100);keys.clear();mouse.down=false;
   state.started=true;state.paused=false;state.ended=false;state.time=0;state.score=0;state.combo=1;state.comboT=0;
   state.cameraX=0;state.shake=0;state.currentLevel=-1;state.currentRound=-1;state.flashT=0;state.accumulator=0;
   state.platforms=[];state.rails=[];state.hazards=[];state.rings=[];state.powerups=[];state.enemies=[];
@@ -429,6 +430,7 @@ UI.start.addEventListener('click',reset);
 
 addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+  if(e.repeat)return;
   if(e.code==='KeyP'){togglePause();return}
   keys.add(e.code);
   if((e.code==='Space'||e.code==='KeyW'||e.code==='ArrowUp')&&state.started&&!state.paused)jump();
@@ -441,6 +443,8 @@ canvas.addEventListener('pointermove',e=>{
 });
 canvas.addEventListener('pointerdown',()=>mouse.down=true);
 addEventListener('pointerup',()=>mouse.down=false);
+addEventListener('pointercancel',()=>mouse.down=false);
+addEventListener('blur',()=>{keys.clear();mouse.down=false;if(state.started&&!state.ended)setPause(true)});
 
 function jump(){
   if(P.y-P.r<=ceilingY()+1){P.y=P.r;P.vy=0;return}

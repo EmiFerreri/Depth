@@ -1,6 +1,6 @@
 {
   "name": "DEPTH",
-  "version": "0.1.0-prototype",
+  "version": "0.2.0",
   "levels_planned": 100,
   "rounds": 10,
   "genre": [
@@ -11,6 +11,7 @@
   "visual_identity": "premium monochrome minimalism with functional color",
   "core_mechanic": "momentum and flow",
   "current_playables": [
+    "index.html",
     "game/levels/level-001.html",
     "game/levels/level-002.html",
     "game/levels/level-003-pro-minimal.html",
@@ -20,5 +21,8 @@
     "game/levels/level-006-pro.html",
     "game/levels/level-007-pro.html",
     "game/levels/level-007b-alt-scenario.html"
-  ]
+  ],
+  "entry": "index.html",
+  "start_command": "npm start",
+  "quality_status": "engine-validated; browser-signoff-pending"
 }

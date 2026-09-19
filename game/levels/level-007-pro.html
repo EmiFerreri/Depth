@@ -249,10 +249,14 @@ function layout(){
  ];
 }
 layout();
+function resetEnemies(){
  state.enemies=[
   {x:5200,y:floorY()-220,r:15,vx:0,vy:0,phase:0,mode:'observe',alive:true},
   {x:11200,y:floorY()-180,r:14,vx:0,vy:0,phase:2.4,mode:'shadow',alive:true}
- ];addEventListener('resize',layout);
+ ];
+}
+resetEnemies();
+addEventListener('resize',layout);
 
 function railPoint(r,t){
  t=clamp(t,0,1);const x=lerp(r.x1,r.x2,t);
@@ -284,7 +288,7 @@ function flash(big,small){
 
 function reset(){
  state.running=true;state.paused=false;state.time=0;state.score=0;state.cameraX=0;state.cameraY=0;state.shake=0;state.msgT=0;state.particles=[];state.trail=[];state.history=[];state.echoShown=false;state.enemies=[];state.enemySeen=false;state.milestones=new Set();routeChoice.chosen=null;routeChoice.announced=false;reactive.forEach(r=>{r.active=false;r.y=r.baseY});
- layout();
+ layout();resetEnemies();keys.clear();
  P.x=120;P.y=floorY()-P.r;P.vx=0;P.vy=0;P.dashCd=0;P.air=0;P.momentum=0;
  UI.intro.style.display='none';UI.end.classList.remove('show');setPause(false);flash('OTHER','no estás solo');
 }
@@ -294,6 +298,7 @@ UI.start.addEventListener('click',reset);UI.restart.addEventListener('click',res
 
 addEventListener('keydown',e=>{
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+ if(e.repeat)return;
  if(e.code==='KeyP'){togglePause();return}
  keys.add(e.code);
  if((e.code==='Space'||e.code==='KeyW'||e.code==='ArrowUp')&&state.running&&!state.paused){
@@ -305,6 +310,7 @@ addEventListener('keydown',e=>{
  }
 },{passive:false});
 addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('blur',()=>{keys.clear();if(state.running)setPause(true)});
 
 function update(dt){
  if(!state.running||state.paused)return;
@@ -352,7 +358,7 @@ function update(dt){
   P.y=p.y-P.r;
   const speed=Math.max(6.2,Math.hypot(P.vx,P.vy));
   P.vx=tan.x*speed*1.03;P.vy=tan.y*speed;
-  P.air=0;state.score+=4;
+  P.air=0;state.score+=240*dt;
  }
 
 

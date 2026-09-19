@@ -1,2 +1,75 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=game/index.html"><title>DEPTH</title></head><body><a href="game/index.html">Open DEPTH project hub</a></body></html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f3ee">
+  <meta name="description" content="DEPTH — una esfera, un impulso, infinitas posibilidades. Un juego de precisión y momentum.">
+  <title>DEPTH — Find your flow</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23212820'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23f4f3ee'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles/game.css">
+</head>
+<body>
+  <canvas id="game" aria-label="Mundo de DEPTH. Usa los controles descritos en el menú."></canvas>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="DEPTH inicio"><span class="brand-orb"></span> DEPTH<span class="edition">/ 02</span></a>
+    <span class="build-label">MOMENTUM EXPERIMENT <span>—</span> v0.2</span>
+    <div class="toolbar"><button id="sound" class="icon-button" aria-pressed="true" aria-label="Sonido activado">SONIDO <span>ON</span></button><button id="fullscreen" class="icon-button" aria-label="Alternar pantalla completa">⛶</button></div>
+  </header>
+
+  <main id="menu" class="menu">
+    <section class="hero-copy">
+      <p class="eyebrow"><span class="live-dot"></span> UNA ESFERA. UN IMPULSO.</p>
+      <h1>FIND<br>YOUR <span>FLOW.</span></h1>
+      <p class="intro-copy">Deslízate por el vacío. Encadena saltos.<br>Convierte cada obstáculo en movimiento.</p>
+      <div class="mode-picker" role="group" aria-label="Modo de juego">
+        <button data-mode="flow" aria-pressed="true">FLOW<span>10 sectores</span></button>
+        <button data-mode="sprint" aria-pressed="false">SPRINT<span>Contrarreloj</span></button>
+        <button data-mode="daily" aria-pressed="false">DAILY<span>Ruta del día</span></button>
+        <button data-mode="campaign" aria-pressed="false">100<span>Campaña</span></button>
+      </div>
+      <p id="mode-description" class="mode-description">Diez sectores. Encuentra tu ritmo.</p>
+      <div class="launch-row"><button id="start" class="primary">INICIAR FLOW <span>↗</span></button><span class="launch-note">Sin instalación.<br>Solo tú y el movimiento.</span></div>
+      <div class="settings">
+        <label><input id="autorun" type="checkbox" checked> Autoavance</label>
+        <label><input id="assist" type="checkbox"> Práctica sin reinicios</label>
+        <label><input id="reduced" type="checkbox"> Movimiento reducido</label>
+      </div>
+    </section>
+    <aside class="hero-art" aria-label="Vista conceptual de una ruta de DEPTH">
+      <div class="art-top"><span>TRAJECTORY / 001</span><span>○ → ∞</span></div>
+      <svg viewBox="0 0 600 390" role="img" aria-label="Una esfera sigue una curva y atraviesa un anillo de impulso">
+        <defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#b9bdb3"/></pattern></defs>
+        <rect width="600" height="390" fill="url(#dots)" opacity=".45"/>
+        <path d="M0 305 H60 C130 305 110 95 215 95 S300 300 380 300 S445 175 600 175" fill="none" stroke="#283027" stroke-width="2"/>
+        <path d="M75 285 C120 280 120 88 208 78" fill="none" stroke="#a4afa0" stroke-dasharray="3 7"/>
+        <circle cx="209" cy="73" r="24" fill="#283027"/><circle cx="209" cy="73" r="8" fill="none" stroke="#f4f3ee" stroke-width="2"/>
+        <circle cx="505" cy="166" r="39" fill="none" stroke="#359b7c" stroke-width="2"/>
+        <path d="m493 158 10 8-10 8m12-16 10 8-10 8" fill="none" stroke="#359b7c" stroke-width="2"/>
+        <path d="M350 338 V230m-8 8 8-8 8 8" stroke="#b8bcb3" fill="none"/>
+        <text x="34" y="365" font-family="monospace" font-size="10" fill="#73796e">GRAVITY IS A SUGGESTION.</text>
+        <text x="463" y="233" font-family="monospace" font-size="10" fill="#359b7c">BOOST +</text>
+      </svg>
+      <div class="art-bottom"><div><span class="mini-label">TU MEJOR MARCA</span><strong id="best">—</strong></div><div><span class="mini-label">RITMO</span><strong>120<span> Hz</span></strong></div></div>
+      <p class="art-caption">Precisión en el movimiento. Libertad en la trayectoria.</p>
+    </aside>
+    <footer class="menu-footer"><p><kbd>ESPACIO</kbd> salto infinito <kbd>SHIFT</kbd> dash <kbd>J</kbd> disparar <kbd>A D</kbd> mover</p><a href="game/index.html">Explorar prototipos originales <span>↗</span></a></footer>
+  </main>
+
+  <section id="hud" class="hud" hidden aria-label="Estado de partida">
+    <div class="hud-left"><span class="mini-label" id="mode-label">FLOW / WAKE</span><strong id="sector">01<span> / 10</span></strong></div>
+    <div class="hud-stats"><div><span class="mini-label">PUNTOS</span><strong id="score">000000</strong></div><div><span class="mini-label">TIEMPO</span><strong id="time">0:00.00</strong></div><div><span class="mini-label">INTEGRIDAD</span><strong id="health">● ● ●</strong></div><button id="pause" class="pause-button" aria-label="Pausar partida">Ⅱ</button></div>
+    <div class="progress"><i id="progress"></i></div>
+  </section>
+  <div id="telemetry" class="telemetry" hidden><div><span class="mini-label">MOMENTUM</span><strong id="speed">0</strong><small>u/s</small></div><div class="dash-status"><span id="dash-label">DASH LISTO</span><div><i id="dash-bar"></i></div></div><strong id="combo">×1</strong></div>
+  <p id="toast" class="toast" role="status" aria-live="polite"></p>
+  <div id="touch-controls" class="touch-controls" hidden aria-label="Controles táctiles"><div><button data-control="left" aria-label="Mover izquierda">←</button><button data-control="right" aria-label="Mover derecha">→</button></div><div><button data-control="shoot">FUEGO</button><button data-control="dash">DASH</button><button data-control="jump" class="touch-jump">SALTO</button></div></div>
+
+  <dialog id="pause-dialog" aria-labelledby="pause-title"><p class="eyebrow">TOMA AIRE</p><h2 id="pause-title">Sin prisa.</h2><p>Tu partida sigue aquí.</p><button id="resume" class="primary">VOLVER AL FLOW <span>→</span></button><button id="restart" class="secondary">Reiniciar ruta</button><button id="quit" class="text-button">Volver al menú</button></dialog>
+  <dialog id="result-dialog" aria-labelledby="result-title"><p class="eyebrow">RUTA COMPLETADA</p><h2 id="result-title">Flow found.</h2><div class="result-grid"><div><span class="mini-label">PUNTOS</span><strong id="result-score"></strong></div><div><span class="mini-label">TIEMPO</span><strong id="result-time"></strong></div><div><span class="mini-label">COMBO MÁXIMO</span><strong id="result-combo"></strong></div><div><span class="mini-label">IMPACTOS</span><strong id="result-hits"></strong></div></div><p id="record-note"></p><button id="again" class="primary">OTRA TRAYECTORIA <span>↗</span></button><button id="result-menu" class="text-button">Elegir otra ruta</button></dialog>
+  <div id="load-error" class="load-error" hidden></div>
+  <noscript><p class="load-error">Activa JavaScript para jugar. <a href="game/index.html">Prototipos originales</a></p></noscript>
+  <script type="module" src="src/main.js"></script>
+  <script>if(location.protocol==='file:'){const e=document.getElementById('load-error');e.hidden=false;e.textContent='Para la nueva versión, ejecuta npm start y abre http://127.0.0.1:8000. Los prototipos originales siguen disponibles en game/index.html.';document.getElementById('start').disabled=true}</script>
+</body>
+</html>
