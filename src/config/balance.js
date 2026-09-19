@@ -5,6 +5,7 @@ export const BALANCE = Object.freeze({
   maxSpeed: 1120, dashImpulse: 490, dashCooldown: 0.8, sectorLength: 2200,
 });
 export const MODES = Object.freeze({
+  story: { name: 'HISTORIA', sectors: 1, seed: 'depth-la-huella-v1', description: 'Ecos de ti · La huella. Sigue las pistas de Luma y abre la primera puerta.' },
   flow: { name: 'FLOW', sectors: 10, seed: 'depth-flow-v2', description: 'Diez sectores. Encuentra tu ritmo.' },
   sprint: { name: 'SPRINT', sectors: 3, seed: 'depth-sprint-v2', description: 'Tres sectores. Cada segundo cuenta.' },
   daily: { name: 'DAILY', sectors: 6, description: 'La misma ruta del día para todos. Hora UTC.' },

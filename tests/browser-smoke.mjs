@@ -12,8 +12,33 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('http://127.0.0.1:8000');
-  await page.getByRole('button', { name: 'INICIAR FLOW' }).waitFor();
+  await page.getByRole('button', { name: 'INICIAR HISTORIA' }).waitFor();
   await page.screenshot({ path: 'build/screenshots/menu.png', fullPage: true });
+  await page.click('#start');
+  await page.locator('#story-intro[open]').waitFor();
+  assert.equal(await page.evaluate(() => window.depth.snapshot().state), 'ready');
+  await page.screenshot({ path: 'build/screenshots/story-intro.png' });
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#menu').isVisible(), true);
+  await page.click('#start'); await page.click('#story-begin');
+  await page.waitForFunction(() => window.depth.snapshot().time > 0.2);
+  assert.equal(await page.evaluate(() => window.depth.snapshot().x), 100);
+  await page.keyboard.down('KeyD');
+  await page.waitForFunction(() => window.depth.snapshot().story.clueFound);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.press('KeyE');
+  await page.locator('#journal-dialog[open]').waitFor();
+  const journalTime = await page.evaluate(() => window.depth.snapshot().time);
+  await page.keyboard.press('KeyR'); await page.waitForTimeout(180);
+  assert.equal(await page.evaluate(() => window.depth.snapshot().time), journalTime);
+  assert.equal(await page.locator('#journal-help').isVisible(), true);
+  await page.screenshot({ path: 'build/screenshots/story-journal.png' });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => window.depth.snapshot().state === 'running');
+  await page.click('#pause'); await page.click('#restart');
+  await page.waitForFunction(() => window.depth.snapshot().time > 0.1);
+  assert.equal(await page.evaluate(() => window.depth.snapshot().story.clueFound), false);
+  await page.click('#pause'); await page.click('#quit');
   await page.click('[data-mode="sprint"]');
   await page.click('#start');
   await page.waitForFunction(() => window.depth.snapshot().x > 150);
@@ -32,6 +57,14 @@ try {
   await page.waitForFunction(() => window.depth.snapshot().state === 'paused');
   await page.click('#quit');
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.click('[data-mode="story"]'); await page.click('#start');
+  await page.click('#story-begin');
+  await page.screenshot({ path: 'build/screenshots/mobile-story.png' });
+  assert.equal(await page.locator('#journal-open').isVisible(), true);
+  assert.equal(await page.locator('[data-control="shoot"]').isVisible(), false);
+  await page.click('#journal-open'); await page.click('#journal-close');
+  await page.click('#pause'); await page.click('#quit');
+  await page.click('[data-mode="sprint"]');
   await page.screenshot({ path: 'build/screenshots/mobile-menu.png', fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.click('#start');
@@ -46,5 +79,5 @@ try {
     await page.waitForFunction(m => window.depth.snapshot().mode === m && window.depth.snapshot().time > 0.1, mode);
   }
   assert.deepEqual(errors, []);
-  console.log('Browser smoke passed: modes, movement, jump, pause/resume, focus loss, mobile and console.');
+  console.log('Browser smoke passed: story intro/journal/restart, arcade modes, movement, pause/resume, focus loss, mobile and console.');
 } finally { await browser.close(); }

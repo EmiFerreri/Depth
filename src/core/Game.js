@@ -3,9 +3,11 @@ import { Player } from '../entities/Player.js';
 import { generateWorld } from '../world/LevelGenerator.js';
 import { movePlayer } from '../physics/PlayerPhysics.js';
 import { sweptRect, sweptCircle } from '../physics/Collision.js';
+import { StoryProgress } from '../story/StoryProgress.js';
 export class Game {
   constructor(mode = 'flow', seed, assist = false) {
     this.mode = mode; this.world = generateWorld(mode, seed); this.assist = assist;
+    this.story = mode === 'story' ? new StoryProgress() : null;
     this.player = new Player(); this.state = 'ready'; this.time = 0;
     this.score = 0; this.combo = 1; this.comboTime = 0; this.bestCombo = 1;
     this.collected = 0; this.hits = 0; this.checkpoint = 100; this.maxX = 100;
@@ -33,15 +35,17 @@ export class Game {
     if (this.state !== 'running') return;
     this.time += dt;
     const controls = { move: 0, jump: false, dash: false, down: false, shoot: false, autoRun: true, ...input };
+    if (this.story) { controls.autoRun = false; controls.shoot = false; }
     const nearby = { ...this.world,
       platforms: this.world.platforms.filter(o => Math.abs(o.x - this.player.x) < 1000),
       rails: this.world.rails.filter(o => Math.abs(o.x - this.player.x) < 1000) };
-    const { old, events } = movePlayer(this.player, controls, nearby, dt, controls.autoRun);
+    const { old, events, landing } = movePlayer(this.player, controls, nearby, dt, controls.autoRun);
     for (const event of events) {
       this.emit(event);
       if (event === 'rail' && !this.railAwards.has(this.player.rail.id)) { this.railAwards.add(this.player.rail.id); this.reward(40); }
     }
     const p = this.player;
+    if (this.story) this.story.step(this, landing);
     if (p.x > this.maxX) { this.score += (p.x - this.maxX) * 0.05; this.maxX = p.x; }
     this.comboTime = Math.max(0, this.comboTime - dt); if (!this.comboTime) this.combo = 1;
     const sector = Math.min(this.world.sectors - 1, Math.floor(p.x / B.sectorLength));

@@ -3,6 +3,7 @@ import { clamp, platformLanding } from './Collision.js';
 import { railPoint, advanceRail } from './RailPhysics.js';
 export function movePlayer(p, input, world, dt, autoRun = true) {
   const events = [];
+  let landing = null;
   for (const timer of ['invulnerable', 'dashCooldown', 'dashTime', 'fireCooldown', 'detach', 'gravityTime']) p[timer] = Math.max(0, p[timer] - dt);
   if (input.jump) { p.vy = -B.jumpSpeed; p.rail = null; p.detach = 0.2; events.push('jump'); }
   if (input.dash && p.dashCooldown === 0) {
@@ -15,15 +16,16 @@ export function movePlayer(p, input, world, dt, autoRun = true) {
     if (p.x >= p.rail.x + p.rail.w) { p.rail = null; p.detach = 0.15; }
   } else {
     p.rail = null;
-    const target = input.move > 0 ? B.runSpeed : input.move < 0 ? -B.runSpeed * 0.6 : autoRun ? B.cruiseSpeed : 0;
+    const speed = world.motion?.speed ?? B.runSpeed;
+    const target = input.move > 0 ? speed : input.move < 0 ? -speed * (world.motion ? 1 : 0.6) : autoRun ? B.cruiseSpeed : 0;
     if (!p.dashTime) {
-      const response = Math.abs(p.vx) > Math.abs(target) && input.move >= 0 ? 0.8 : 4.2;
+      const response = world.motion?.response ?? (Math.abs(p.vx) > Math.abs(target) && input.move >= 0 ? 0.8 : 4.2);
       p.vx += (target - p.vx) * (1 - Math.exp(-response * dt));
     }
     p.vy += B.gravity * (p.gravityTime ? 0.48 : 1) * (input.down ? 1.8 : 1) * dt;
     p.x += p.vx * dt; p.y += p.vy * dt;
     for (const platform of world.platforms) {
-      if (platformLanding(old.x, old.y, p.x, p.y, p.r, platform)) { p.y = platform.y - p.r; p.vy = 0; }
+      if (platformLanding(old.x, old.y, p.x, p.y, p.r, platform)) { p.y = platform.y - p.r; p.vy = 0; landing = platform.id; }
     }
     if (!p.detach && p.vy >= 0 && p.vx > 0) {
       for (const rail of world.rails) {
@@ -37,5 +39,5 @@ export function movePlayer(p, input, world, dt, autoRun = true) {
   if (p.y < p.r + 80) { p.y = p.r + 80; p.vy = Math.max(0, p.vy); }
   if (p.y > B.floor - p.r) { p.y = B.floor - p.r; p.vy = 0; }
   p.vx = clamp(p.vx, -B.maxSpeed, B.maxSpeed);
-  return { old, events };
+  return { old, events, landing };
 }

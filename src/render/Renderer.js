@@ -1,6 +1,7 @@
 import { BALANCE as B } from '../config/balance.js';
 import { Camera } from './Camera.js';
 import { railPoint } from '../physics/RailPhysics.js';
+import { drawStory } from './StoryRenderer.js';
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d', { alpha: false });
@@ -62,6 +63,7 @@ export class Renderer {
       c.fillStyle = '#30342f'; c.fillRect(platform.x, platform.y, platform.w, 4);
       c.fillStyle = '#dedfd7'; c.fillRect(platform.x, platform.y + 8, platform.w, 2);
     }
+    if (game.story) drawStory(c, game, this.reduced);
     for (const hazard of world.hazards) {
       if (!visible(hazard.x, hazard.w)) continue;
       c.fillStyle = '#cf4b34';
@@ -104,7 +106,7 @@ export class Renderer {
     c.strokeStyle = '#f7f9ec'; c.lineWidth = 1.5; c.beginPath(); c.arc(p.x, p.y, 5, 0, Math.PI * 2); c.stroke();
     c.globalAlpha = 1;
     if (p.shield || p.dashTime) { c.strokeStyle = '#329c7c'; c.beginPath(); c.arc(p.x, p.y, p.r + 7, 0, Math.PI * 2); c.stroke(); }
-    if (game.time < 6 && game.state === 'running') { c.font = '12px monospace'; c.fillStyle = '#585f51'; c.fillText('ESPACIO para saltar · SHIFT para dash', p.x - 90, p.y - 65); }
+    if (game.time < 6 && game.state === 'running') { c.font = '12px monospace'; c.fillStyle = '#585f51'; c.fillText(game.story ? 'A / D para rodar · ESPACIO para saltar' : 'ESPACIO para saltar · SHIFT para dash', p.x - 90, p.y - 65); }
     c.restore();
   }
 }

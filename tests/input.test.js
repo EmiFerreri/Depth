@@ -10,11 +10,17 @@ test('keyboard repeats, focus loss and pointer cancellation cannot stick control
   globalThis.document = { querySelectorAll: () => controls }; globalThis.addEventListener = (name, fn) => { listeners[name] = fn; };
   globalThis.HTMLInputElement = class {}; globalThis.HTMLSelectElement = class {};
   const canvas = { listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } };
-  let pauses = 0; const input = new Input(canvas, () => pauses++, () => {});
+  let pauses = 0, journals = 0; const input = new Input(canvas, () => pauses++, () => {}, () => journals++);
   const event = (code, repeat = false) => ({ code, repeat, target: { closest: () => null }, preventDefault() {} });
   listeners.keydown(event('Space')); assert.equal(input.read().jump, true);
   listeners.keydown(event('Space', true)); assert.equal(input.read().jump, false);
   listeners.keydown(event('KeyP', true)); assert.equal(pauses, 0);
+  listeners.keydown(event('KeyE')); assert.equal(journals, 1);
+  listeners.keydown(event('KeyE', true)); assert.equal(journals, 1);
+  for (const code of ['Space', 'Escape', 'KeyP', 'KeyR', 'KeyE']) {
+    listeners.keydown({ ...event(code), target: { closest: selector => selector === 'dialog' ? {} : null } });
+  }
+  assert.equal(input.read().jump, false); assert.equal(pauses, 0); assert.equal(journals, 1);
   listeners.keydown(event('KeyD')); assert.equal(input.read().move, 1);
   listeners.blur(); assert.equal(input.read().move, 0);
   const right = controls[1], shoot = controls[4];

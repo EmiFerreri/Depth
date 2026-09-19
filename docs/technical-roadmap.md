@@ -5,6 +5,14 @@
 > See [architecture and current limits](ARCHITECTURE.md) and the
 > [audit](AUDIT-2026-09-19.md) before treating items below as completed.
 
+## Current story milestone (0.3)
+
+Completed: La huella, its clue/sequence/gate, introduction, journal, first echo and
+engine regression tests. Next: browser/audio/touch playtest, tune clue readability,
+then author level 002. The canonical [story](story-bible.md) and [100-level outline](100-level-outline.md)
+replace the earlier narrative proposal. The full story, alternating Luma control,
+cooperative puzzles and finale still need implementation.
+
 ## Phase 1 — Movement Foundation
 - fixed timestep physics
 - momentum conservation

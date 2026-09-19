@@ -1,6 +1,6 @@
 {
-  "name": "depth-game", "version": "0.2.0", "private": true, "type": "module",
-  "description": "A minimalist momentum platformer with a deterministic local game engine.",
-  "scripts": { "start": "node tools/serve.mjs", "test": "node --test tests/engine.test.js tests/input.test.js tests/legacy.test.js", "check": "node tools/check.mjs" },
+  "name": "depth-game", "version": "0.3.0", "private": true, "type": "module",
+  "description": "DEPTH: Ecos de ti. A story of memory, momentum and the traces we leave behind.",
+  "scripts": { "start": "node tools/serve.mjs", "test": "node --test tests/engine.test.js tests/input.test.js tests/legacy.test.js tests/story.test.js", "check": "node tools/check.mjs" },
   "engines": { "node": ">=20" }
 }

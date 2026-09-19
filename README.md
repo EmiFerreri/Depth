@@ -1,95 +1,108 @@
-# DEPTH /02
+# DEPTH / ECOS DE TI
 
-**Find your flow.** A minimalist 2D momentum platformer built around a sphere,
-continuous movement and functional color. Native JavaScript, Canvas 2D and Web Audio.
+**Si un día no me reconoces, busca lo que todavía sentimos.**
 
-Version **0.2.0** adds a connected game engine and a new playable entry. The original
-prototypes remain available. This is an actively developed game foundation;
-browser/device sign-off is still pending, as documented in the audit.
+Nox entra en DEPTH para encontrar a Luma, su esposa, cuyos recuerdos fueron
+alterados por PRISMA. Ella todavía deja señales: un anillo incompleto, tres luces,
+un orden que solo cobra sentido cuando alguien se detiene a escuchar.
 
-## Play locally
+Un juego de plataformas, momentum y acertijos hecho con JavaScript nativo,
+Canvas 2D y Web Audio. La versión **0.3.0** incorpora el primer nivel narrativo
+jugable, **La huella**, junto con los modos arcade existentes.
 
-Install Node.js 20 or newer, open a terminal in this repository, then:
+## Jugar en tu equipo
+
+Con Node.js 20 o posterior, abre una terminal en el repositorio:
 
 ```powershell
 npm start
 ```
 
-Open **http://127.0.0.1:8000**. No `npm install`, build step, API key or account is
-needed for the game or default tests. The server binds only to your own machine.
-Native ES modules require HTTP; opening the new root HTML as a file shows instructions.
-The original standalone prototypes in `game/` can still be opened directly.
+Abre **http://127.0.0.1:8000**, elige **HISTORIA** y pulsa **SEGUIR SU HUELLA**.
+El juego y sus pruebas básicas no requieren `npm install`, cuentas, claves ni servicios.
+El servidor solo escucha en tu equipo. Los módulos necesitan HTTP; los prototipos
+originales de `game/` conservan su apertura directa como archivos.
 
-## Modes
+## La huella
 
-| Mode | Route | Goal |
+- Un prólogo presenta a Nox, Luma y PRISMA.
+- Acércate al anillo incompleto para descubrir la pista de Luma.
+- Tres plataformas responden al aterrizar con números, símbolos y pulsos sonoros.
+- Reconstruye su secuencia para abrir la puerta y recuperar el primer eco.
+- Consulta **ECOS / E** para releer los mensajes; el mundo se pausa mientras lees.
+- Una ayuda desplegable explica la solución si te atascas. Puedes equivocarte y reintentar.
+
+Historia usa movimiento manual y frenado más preciso. El diario y el acertijo se
+reinician al comenzar otra partida; las mejores marcas se guardan en el navegador.
+
+## Modos
+
+| Modo | Contenido | Objetivo |
 |---|---|---|
-| Flow | 10 sectors | Learn the movement and chain pickups |
-| Sprint | 3 sectors | Improve your completion time |
-| Daily | 6 sectors, shared UTC-date seed | Retry the same daily layout |
-| Campaign | 100 sectors / 10 rounds | Sustain flow through the longer route |
+| Historia | 1 nivel diseñado: La huella | Interpretar la pista, abrir la puerta, recuperar el eco |
+| Flow | 10 sectores | Descubrir el movimiento y encadenar recogidas |
+| Sprint | 3 sectores | Mejorar el tiempo |
+| Daily | 6 sectores, semilla diaria UTC | Repetir la misma ruta del día |
+| 100 / Arcade | 100 sectores en 10 rondas | Mantener el flow en una ruta larga |
 
-The new campaign combines four reusable route patterns with seeded variations.
-It is not a claim of 100 unique handcrafted levels. Daily is generated locally;
-there is no scheduled job, server or global leaderboard.
+Los cien sectores arcade combinan cuatro patrones con variaciones deterministas.
+La historia completa tiene diez capítulos y cien niveles **planificados**; solo el
+primer nivel narrativo está implementado. Consulta el [guion](docs/story-bible.md)
+y el [diseño de niveles](docs/100-level-outline.md). Daily se genera localmente.
 
-## Controls
+## Controles
 
-| Action | Keyboard / mouse | Touch |
+| Acción | Teclado / ratón | Táctil |
 |---|---|---|
-| Move | A/D or left/right arrows | Arrow buttons |
-| Jump, including midair | Space / W / up arrow | Jump or tap the canvas |
+| Mover | A/D o flechas izquierda/derecha | Flechas |
+| Saltar, también en el aire | Espacio / W / flecha arriba | Salto o tocar el mundo |
 | Dash | Shift | Dash |
-| Shoot | J forward, or hold mouse to aim | Fire forward |
-| Fast fall | S / down arrow | — |
-| Pause | P / Escape or pause button | Pause button |
-| Restart current route | R or pause dialog | Restart in pause dialog |
+| Leer ecos, en Historia | E | Botón ECOS |
+| Disparar, en arcade | J, o mantener el ratón para apuntar | Fuego |
+| Caída rápida | S / flecha abajo | — |
+| Pausar | P / Escape o botón de pausa | Pausa |
+| Reiniciar | R durante la partida o menú de pausa | Reiniciar en pausa |
 
-Auto-advance, practice mode and reduced motion are selectable in the menu.
-Practice prevents checkpoint resets; standard and practice records stay separate.
+Autoavance está disponible en arcade. Práctica evita los reinicios por daño;
+las marcas se separan por modo, semilla, práctica y movimiento manual/automático.
+Movimiento reducido elimina partículas, estelas, sacudidas y oscilaciones decorativas.
 
-## Implemented
-
-- Fixed 120 Hz simulation, frame-rate independence tests and bounded catch-up.
-- Curve riding, infinite jumps, dash cooldown, drones and swept projectile collisions.
-- Boost rings, shield, low gravity, combos and sector checkpoints.
-- Persistent best scores/times, corruption handling and blocked-storage fallback.
-- Keyboard/mouse/touch controls, focus-loss pause, native dialogs and reduced motion.
-- Responsive monochrome interface, functional color and synthesized sound feedback.
-- Local server and tests with no production or default test dependencies.
-
-## Quality checks
+## Validación local
 
 ```powershell
 npm test
 npm run check
 ```
 
-These test the engine, world generation, regressions and syntax. A scripted player
-also completes all four modes, including the 100-sector route. Real browser testing
-requires the optional [browser smoke and playtest](docs/PLAYTEST.md); its execution
-was blocked in the implementation environment. Passing simulation tests is not a
-substitute for human playtesting or a visual/device audit.
+**26 pruebas pasan**: física, generación, controles, persistencia, regresiones y
+acertijo. Una simulación con controles normales descubre la pista, comete un error,
+resuelve la secuencia y completa La huella. Otra completa los cuatro modos arcade.
+**48 comprobaciones de sintaxis** pasan, junto con la lectura de JSON.
 
-## Repository
+La revisión visual, sonora y de dispositivos en un navegador real sigue pendiente.
+El [playtest y smoke de navegador](docs/PLAYTEST.md) permiten hacerla localmente.
+Consulta la [validación de esta entrega](docs/STORY-VALIDATION-2026-09-19.md).
 
-- `index.html`, `styles/`, `src/main.js` — new playable UI.
-- `src/core`, `physics`, `world`, `entities`, `render`, `audio` — working engine modules.
-- `tests/`, `tools/` — local validation and preview server.
-- `game/` — original campaign, levels 1–7 and 7B; selected legacy fixes included.
-- `archive/` — unchanged historical standalone variants.
-- `docs/` — [architecture](docs/ARCHITECTURE.md), [audit](docs/AUDIT-2026-09-19.md),
-  [story](docs/story-bible.md), [roadmap](docs/technical-roadmap.md), import provenance.
-- `prompts/` — original design and engineering prompts.
+## Estructura
 
-## Next milestone
+- `index.html`, `styles/`, `src/main.js`: menú, HUD, prólogo, diario y resultados.
+- `src/story/`: canon textual, secuencia y progreso narrativo.
+- `src/world/StoryLevel.js`: geometría del primer nivel.
+- `src/core`, `physics`, `entities`, `render`, `audio`: motor modular a 120 Hz.
+- `tests/`, `tools/`: pruebas y servidor local sin dependencias de producción.
+- `game/`, `archive/`: prototipos y variantes históricas.
+- `docs/`: guion, niveles, arquitectura, auditorías y próximos pasos.
 
-Run the Windows/phone browser gates, tune movement with human playtests, then add
-controller input, custom key bindings, save/resume, proper 360-degree loop constraints
-and richer authored routes. See [CHANGELOG.md](CHANGELOG.md).
+## Próximos pasos
 
-## Costs and data
+Probar Historia con jugadores en Windows y móvil, ajustar la lectura de las pistas
+y construir el siguiente nivel. Quedan por desarrollar los demás acertijos,
+el control alterno de Luma, los capítulos posteriores y su desenlace.
+Las mejoras técnicas pendientes figuran en [la arquitectura](docs/ARCHITECTURE.md)
+y el [roadmap](docs/technical-roadmap.md). Cambios: [CHANGELOG](CHANGELOG.md).
 
-No GitHub Actions workflow, automatic deployment, analytics or paid API calls.
-Records remain in the browser. No license was added by this change; this repository
-is not being relicensed as open-source by the implementation.
+## Servicios y datos
+
+Sin GitHub Actions, despliegue automático, analítica ni llamadas a APIs de pago.
+Las marcas permanecen en tu navegador. El repositorio conserva su situación de
+licencia; esta actualización no añade una licencia ni lo relicencia.

@@ -1,13 +1,15 @@
 export class Input {
-  constructor(canvas, onPause, onRestart) {
+  constructor(canvas, onPause, onRestart, onJournal = () => {}) {
     this.keys = new Set(); this.touch = new Map(); this.actions = new Set(); this.pointer = null; this.firing = false;
     const keyActions = { Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', ShiftLeft: 'dash', ShiftRight: 'dash' };
     addEventListener('keydown', event => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+      if (event.target.closest('dialog')) return;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code) && !event.target.closest('button')) event.preventDefault();
       if (event.repeat) return;
       if (event.code === 'Escape' || event.code === 'KeyP') { onPause(); return; }
       if (event.code === 'KeyR') { onRestart(); return; }
+      if (event.code === 'KeyE') { onJournal(); return; }
       this.keys.add(event.code);
       if (keyActions[event.code]) this.actions.add(keyActions[event.code]);
     });

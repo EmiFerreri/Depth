@@ -1,6 +1,6 @@
 {
   "name": "DEPTH",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "levels_planned": 100,
   "rounds": 10,
   "genre": [
@@ -24,5 +24,12 @@
   ],
   "entry": "index.html",
   "start_command": "npm start",
-  "quality_status": "engine-validated; browser-signoff-pending"
+  "quality_status": "engine-validated; browser-signoff-pending",
+  "story": {
+    "title": "Ecos de ti",
+    "playable_levels": 1,
+    "planned_levels": 100,
+    "playable_chapter": "La huella",
+    "canon": "docs/story-bible.md"
+  }
 }
