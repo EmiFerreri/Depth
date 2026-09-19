@@ -2,8 +2,8 @@ import { BALANCE as B, MODES } from '../config/balance.js';
 import { seededRandom } from './ChunkGenerator.js';
 import { generateStoryLevel } from './StoryLevel.js';
 export function dailySeed(date = new Date()) { return `depth-daily-v2-${date.toISOString().slice(0, 10)}`; }
-export function generateWorld(mode = 'flow', seed = MODES[mode]?.seed || dailySeed()) {
-  if (mode === 'story') return generateStoryLevel();
+export function generateWorld(mode = 'flow', seed = MODES[mode]?.seed || dailySeed(), options = {}) {
+  if (mode === 'story' || mode === 'expedition') return generateStoryLevel({ ...options, seed }, mode);
   const config = MODES[mode];
   if (!config) throw new Error('Unknown mode');
   const random = seededRandom(seed);

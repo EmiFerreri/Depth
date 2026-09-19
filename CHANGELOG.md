@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0 — El descenso
+
+- 100 playable story chambers and ten rule families with bounded progressive difficulty.
+- Direction, false traces, sustained landings, timestamp ordering, Nox/Luma switching,
+  Lights Out switches, rhythm windows and combined final trials.
+- Three independent stars per chamber, optional relics, targets and an unlock map.
+- Persistent campaign, replay selection, legacy migration and validated JSON backup merge.
+- Seeded expeditions: UTC daily/weekly codes, five intensities, 12/36/100,000 chambers.
+- Load one room at a time; advanced memory deadlines preserve completed blocks.
+- Input-only pilot completes all 100 story chambers and a demanding 36-room expedition.
+- Fixed duplicate pad activation when switching back to a resting character.
+- One local validation command with Markdown/JSON reports: 36 tests and 56 syntax checks.
+- Audit, measured implementation limits and a playtest-led longevity plan.
+
+Real browser/audio/touch sign-off and human difficulty tuning remain pending.
+Generated variety is not a claim of years of proven retention or fully bespoke scenes.
+
 ## 0.3.0 — Ecos de ti / La huella
 
 - New Story mode: Nox follows the subconscious traces left by Luma inside DEPTH.

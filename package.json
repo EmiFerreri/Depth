@@ -1,6 +1,17 @@
 {
-  "name": "depth-game", "version": "0.3.0", "private": true, "type": "module",
+  "name": "depth-game",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
   "description": "DEPTH: Ecos de ti. A story of memory, momentum and the traces we leave behind.",
-  "scripts": { "start": "node tools/serve.mjs", "test": "node --test tests/engine.test.js tests/input.test.js tests/legacy.test.js tests/story.test.js", "check": "node tools/check.mjs" },
-  "engines": { "node": ">=20" }
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "test": "node --test tests/engine.test.js tests/input.test.js tests/legacy.test.js tests/story.test.js tests/campaign.test.js",
+    "check": "node tools/check.mjs",
+    "audit:levels": "node tools/audit-levels.mjs",
+    "validate": "node tools/validate.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }

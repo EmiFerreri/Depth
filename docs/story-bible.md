@@ -2,9 +2,11 @@
 
 > Si un día no me reconoces, busca lo que todavía sentimos.
 
-Canon narrativo a partir de la versión 0.3. La primera prueba de **La huella** es
-jugable en el modo Historia. Los demás niveles, personajes controlables y escenas
-que se describen aquí son diseño para desarrollar, no funciones ya implementadas.
+Canon narrativo de Ecos de ti. La versión 0.4 hace jugables 100 cámaras mediante
+diez familias de reglas, con alternancia entre Nox y Luma en cooperación y en el
+capítulo final. Las escenas que siguen son el guion de referencia: algunas están
+representadas por acertijos y texto; otras requieren todavía escenarios y mecánicas
+diseñados específicamente. Véase [la auditoría de alcance](AUDIT-0.4.md).
 La propuesta anterior se conserva en [el archivo original](archive/story-bible-original.md).
 
 ## Premisa
@@ -74,8 +76,8 @@ Detrás encuentra el primer mensaje:
 
 **«No sigas mis pasos. Algunos ya no son míos».**
 
-La versión 0.3 implementa este primer nivel, su prólogo, acertijo, diario y cierre.
-Los niveles 2–10 expandirán la lectura de huellas falsas hasta la primera confrontación.
+La versión 0.3 introdujo esta primera prueba. La 0.4 amplía el capítulo con
+variantes de secuencia y geometría; las huellas falsas se introducen en el capítulo IV.
 
 ### II · La casa imposible · niveles 11–20
 

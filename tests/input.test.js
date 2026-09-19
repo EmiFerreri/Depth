@@ -17,6 +17,8 @@ test('keyboard repeats, focus loss and pointer cancellation cannot stick control
   listeners.keydown(event('KeyP', true)); assert.equal(pauses, 0);
   listeners.keydown(event('KeyE')); assert.equal(journals, 1);
   listeners.keydown(event('KeyE', true)); assert.equal(journals, 1);
+  listeners.keydown(event('KeyQ')); assert.equal(input.read().swap, true);
+  listeners.keydown(event('KeyQ', true)); assert.equal(input.read().swap, false);
   for (const code of ['Space', 'Escape', 'KeyP', 'KeyR', 'KeyE']) {
     listeners.keydown({ ...event(code), target: { closest: selector => selector === 'dialog' ? {} : null } });
   }

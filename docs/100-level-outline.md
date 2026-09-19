@@ -1,9 +1,12 @@
 # ECOS DE TI — diseño de 100 niveles
 
-**Estado 0.3:** solo el nivel 001 está implementado en Historia. Los niveles 002–100
-son una propuesta de diseño. Los cien sectores generados del modo arcade son otro
-modo y no representan estos acertijos. El esquema anterior se conserva en
-[el archivo](archive/100-level-outline-original.md).
+**Estado 0.4:** hay 100 cámaras jugables con estos títulos, construidas a partir de
+diez familias de reglas. Esta tabla conserva el **diseño narrativo detallado**, no
+asegura que cada escena descrita esté implementada literalmente. Por ejemplo, el
+capítulo de la casa usa inversión de secuencias y todavía no tiene ventanas o relojes
+interactivos. La matriz de reglas realmente jugables está en el [README](../README.md).
+Los cien sectores del arcade son un modo distinto. El esquema anterior se conserva
+en [el archivo](archive/100-level-outline-original.md).
 
 Cada capítulo debe presentar una regla, permitir experimentar, combinarla con el
 movimiento y cerrar con una revelación. Los textos esenciales se guardarán en el

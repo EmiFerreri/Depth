@@ -2,15 +2,15 @@
 
 **Si un día no me reconoces, busca lo que todavía sentimos.**
 
-Nox entra en DEPTH para encontrar a Luma, su esposa, cuyos recuerdos fueron
-alterados por PRISMA. Ella todavía deja señales: un anillo incompleto, tres luces,
-un orden que solo cobra sentido cuando alguien se detiene a escuchar.
+Nox entra en DEPTH para encontrar a Luma, su esposa, cuyos recuerdos fueron alterados
+por PRISMA. Ella todavía deja señales. Para llegar hasta ella debes entenderlas,
+coordinar movimientos y aprender a distinguir los recuerdos de las órdenes.
 
-Un juego de plataformas, momentum y acertijos hecho con JavaScript nativo,
-Canvas 2D y Web Audio. La versión **0.3.0** incorpora el primer nivel narrativo
-jugable, **La huella**, junto con los modos arcade existentes.
+**Versión 0.4.0:** 100 cámaras jugables, diez familias de acertijos, progresión guardada,
+300 estrellas y expediciones reproducibles por código. JavaScript nativo, Canvas 2D,
+Web Audio y simulación a 120 Hz. Sin servicios de pago ni dependencias de producción.
 
-## Jugar en tu equipo
+## Jugar
 
 Con Node.js 20 o posterior, abre una terminal en el repositorio:
 
@@ -18,91 +18,122 @@ Con Node.js 20 o posterior, abre una terminal en el repositorio:
 npm start
 ```
 
-Abre **http://127.0.0.1:8000**, elige **HISTORIA** y pulsa **SEGUIR SU HUELLA**.
-El juego y sus pruebas básicas no requieren `npm install`, cuentas, claves ni servicios.
-El servidor solo escucha en tu equipo. Los módulos necesitan HTTP; los prototipos
-originales de `game/` conservan su apertura directa como archivos.
+Abre **http://127.0.0.1:8000**. Elige **HISTORIA** para empezar o continuar; usa
+**EXPEDICIÓN** para configurar una ruta. El juego y la validación básica no necesitan
+`npm install`, cuentas ni claves. Los prototipos originales siguen en `game/`.
 
-## La huella
+## Una campaña más larga, con dificultad por etapas
 
-- Un prólogo presenta a Nox, Luma y PRISMA.
-- Acércate al anillo incompleto para descubrir la pista de Luma.
-- Tres plataformas responden al aterrizar con números, símbolos y pulsos sonoros.
-- Reconstruye su secuencia para abrir la puerta y recuperar el primer eco.
-- Consulta **ECOS / E** para releer los mensajes; el mundo se pausa mientras lees.
-- Una ayuda desplegable explica la solución si te atascas. Puedes equivocarte y reintentar.
-
-Historia usa movimiento manual y frenado más preciso. El diario y el acertijo se
-reinician al comenzar otra partida; las mejores marcas se guardan en el navegador.
-
-## Modos
-
-| Modo | Contenido | Objetivo |
+| Cámaras | Capítulo | Regla jugable |
 |---|---|---|
-| Historia | 1 nivel diseñado: La huella | Interpretar la pista, abrir la puerta, recuperar el eco |
-| Flow | 10 sectores | Descubrir el movimiento y encadenar recogidas |
-| Sprint | 3 sectores | Mejorar el tiempo |
-| Daily | 6 sectores, semilla diaria UTC | Repetir la misma ruta del día |
-| 100 / Arcade | 100 sectores en 10 rondas | Mantener el flow en una ruta larga |
+| 001–010 | La huella | Reconstruir secuencias de aterrizajes |
+| 011–020 | La casa imposible | Descifrar el orden que muestra un espejo |
+| 021–030 | Nuestra órbita | Aterrizar moviéndote en la dirección indicada |
+| 031–040 | El jardín de las voces | Elegir las huellas auténticas entre anillos falsos |
+| 041–050 | El peso del miedo | Sostener cada plataforma durante su carga |
+| 051–060 | El archivo roto | Ordenar fragmentos por su hora, no por su número |
+| 061–070 | Dos lados del cristal | Alternar Nox/Luma; cada uno conserva su posición |
+| 071–080 | La falsa libertad | Apagar una red: cada interruptor cambia su luz y la siguiente |
+| 081–090 | La canción enterrada | Aterrizar durante las ventanas de silencio visibles |
+| 091–100 | El derecho a despertar | Combinar personajes, dirección, quietud y ritmo; salir con Luma |
 
-Los cien sectores arcade combinan cuatro patrones con variaciones deterministas.
-La historia completa tiene diez capítulos y cien niveles **planificados**; solo el
-primer nivel narrativo está implementado. Consulta el [guion](docs/story-bible.md)
-y el [diseño de niveles](docs/100-level-outline.md). Daily se genera localmente.
+Las cámaras se construyen con reglas, geometría y semillas deterministas. No son
+100 escenarios dibujados individualmente ni la implementación literal de todas las
+escenas del [guion](docs/story-bible.md). Sus nombres y contexto vienen del
+[diseño narrativo](docs/100-level-outline.md).
 
-## Controles
+La precisión aumenta: plataformas de 180 a 94 unidades, hasta cinco huellas,
+secuencias de hasta ocho pasos, alturas variables y obstáculos entre plataformas.
+Cada capítulo introduce una regla antes de exigir sus variantes más largas.
+Los bloques de tres pasos se conservan en secuencias avanzadas. El modo Historia
+no impone un tiempo máximo para terminar.
+
+## Motivos para volver
+
+- **300 estrellas acumulables:** completar, resolver sin errores ni daño en estándar,
+  y recoger la reliquia opcional. No necesitas todas para avanzar.
+- **Mapa de 100 cámaras:** se desbloquean en orden; puedes repetir cualquiera ya abierta.
+- **Marcas y tiempos objetivo:** mejora tu recorrido después de entender el acertijo.
+- **Expediciones:** códigos propios, código del día o de la semana (UTC), cinco intensidades
+  y recorridos de 12, 36 o hasta 100 000 cámaras en Abismo.
+- **Mezcla de reglas:** cada bloque de diez cámaras de expedición contiene las diez
+  familias y termina con una prueba combinada. Su orden intermedio cambia por código.
+- **Experto y Maestro:** añaden un plazo entre recuerdos; perderlo conserva el último
+  bloque completo. Las pausas y el diario detienen ese plazo.
+- **Memoria acotada:** solo se carga la cámara actual, también en recorridos largos.
+
+Para compartir una expedición, comparte **código + intensidad + longitud + versión
+0.4**. Esa combinación reproduce la misma ruta. La dificultad alcanza un límite:
+no reduce indefinidamente las plataformas ni los intervalos de reacción.
+
+Esto ofrece una base de rejugabilidad; no demuestra que alguien jugará cinco años.
+La variedad generada reutiliza diez familias. Mantener el interés durante años
+exige playtests y nuevas reglas, rutas y herramientas de creación. Véase el
+[plan de longevidad](docs/LONGEVITY.md).
+
+## Guardado y controles
+
+Historia guarda la cámara desbloqueada, estrellas y mejores tiempos. Expedición
+conserva el código y la cámara desde la que continuar. El punto de guardado es el
+inicio de una cámara: salir a mitad de ella reinicia ese intento. Usa **Exportar
+progreso** para guardar una copia JSON e **Importar copia** para combinarla conservando
+los mejores logros. Borrar los datos del navegador borra su copia local.
 
 | Acción | Teclado / ratón | Táctil |
 |---|---|---|
-| Mover | A/D o flechas izquierda/derecha | Flechas |
-| Saltar, también en el aire | Espacio / W / flecha arriba | Salto o tocar el mundo |
+| Mover | A/D o flechas | Flechas |
+| Saltar, también en el aire | Espacio / W / arriba | Salto o tocar el mundo |
 | Dash | Shift | Dash |
-| Leer ecos, en Historia | E | Botón ECOS |
-| Disparar, en arcade | J, o mantener el ratón para apuntar | Fuego |
-| Caída rápida | S / flecha abajo | — |
-| Pausar | P / Escape o botón de pausa | Pausa |
-| Reiniciar | R durante la partida o menú de pausa | Reiniciar en pausa |
+| Leer pistas y ayuda | E | ECOS |
+| Alternar Nox/Luma, cuando esté disponible | Q | CAMBIAR |
+| Disparar en arcade | J o mantener ratón para apuntar | Fuego |
+| Caída rápida | S / abajo | — |
+| Pausar | P / Escape | Pausa |
+| Reiniciar la cámara | R durante la partida | Reiniciar en pausa |
 
-Autoavance está disponible en arcade. Práctica evita los reinicios por daño;
-las marcas se separan por modo, semilla, práctica y movimiento manual/automático.
-Movimiento reducido elimina partículas, estelas, sacudidas y oscilaciones decorativas.
+Historia y Expedición usan movimiento manual. Leer ECOS pausa la simulación.
+Los números, formas y textos acompañan a sonidos y colores. Hay práctica y movimiento
+reducido. El juego todavía no ofrece navegación completamente no visual.
 
-## Validación local
+## Modos arcade conservados
+
+Flow tiene 10 sectores, Sprint 3, Daily 6 y el modo 100 recorre cien sectores.
+Su generador conserva los cuatro patrones originales. Tienen curvas, dash, disparos,
+enemigos, escudos, gravedad ligera, combos y checkpoints. Son distintos de las nuevas
+cámaras narrativas y de las expediciones de acertijos.
+
+## Validar en tu equipo
 
 ```powershell
-npm test
-npm run check
+npm run validate
 ```
 
-**26 pruebas pasan**: física, generación, controles, persistencia, regresiones y
-acertijo. Una simulación con controles normales descubre la pista, comete un error,
-resuelve la secuencia y completa La huella. Otra completa los cuatro modos arcade.
-**48 comprobaciones de sintaxis** pasan, junto con la lectura de JSON.
+Genera `build/validation/report.md` y `report.json`, más el informe por cámara
+`levels.md` y `levels.json`. Devuelve un código de error si una comprobación falla.
+No ejecuta GitHub Actions, navegador ni servicios remotos.
 
-La revisión visual, sonora y de dispositivos en un navegador real sigue pendiente.
-El [playtest y smoke de navegador](docs/PLAYTEST.md) permiten hacerla localmente.
-Consulta la [validación de esta entrega](docs/STORY-VALIDATION-2026-09-19.md).
+- **36 pruebas pasan**, incluyendo regresiones del arcade y del primer nivel.
+- **56 comprobaciones de sintaxis** pasan y los JSON se leen correctamente.
+- Un piloto con controles completa **las 100 cámaras** y una expedición de **36**
+  en intensidad Maestro. También se comprueban guardado, copias y reglas individuales.
+- El piloto conoce las soluciones: mide viabilidad, no dificultad o diversión humana.
 
-## Estructura
+Comandos separados: `npm test`, `npm run check`, `npm run audit:levels`.
+La validación visual, sonora y táctil en navegador real sigue pendiente. El
+[playtest](docs/PLAYTEST.md) incluye una prueba opcional de Chromium.
 
-- `index.html`, `styles/`, `src/main.js`: menú, HUD, prólogo, diario y resultados.
-- `src/story/`: canon textual, secuencia y progreso narrativo.
-- `src/world/StoryLevel.js`: geometría del primer nivel.
-- `src/core`, `physics`, `entities`, `render`, `audio`: motor modular a 120 Hz.
-- `tests/`, `tools/`: pruebas y servidor local sin dependencias de producción.
-- `game/`, `archive/`: prototipos y variantes históricas.
-- `docs/`: guion, niveles, arquitectura, auditorías y próximos pasos.
+## Repositorio
 
-## Próximos pasos
+- `src/story/Campaign.js`: reglas, curva de dificultad, pistas y expediciones.
+- `src/story/SequencePuzzle.js`, `SwitchPuzzle.js`: controladores independientes.
+- `src/world/StoryLevel.js`: geometría y reliquias de la cámara actual.
+- `src/core/Progress.js`: avance, estrellas, migración y copias locales.
+- `src/core`, `physics`, `render`, `audio`: motor y presentación.
+- `tests/`, `tools/`: regresiones, piloto y validación local.
+- `game/`, `archive/`: prototipos y variantes anteriores.
+- `docs/`: [auditoría 0.4](docs/AUDIT-0.4.md), [arquitectura](docs/ARCHITECTURE.md),
+  guion, niveles y siguientes pasos. [Cambios](CHANGELOG.md).
 
-Probar Historia con jugadores en Windows y móvil, ajustar la lectura de las pistas
-y construir el siguiente nivel. Quedan por desarrollar los demás acertijos,
-el control alterno de Luma, los capítulos posteriores y su desenlace.
-Las mejoras técnicas pendientes figuran en [la arquitectura](docs/ARCHITECTURE.md)
-y el [roadmap](docs/technical-roadmap.md). Cambios: [CHANGELOG](CHANGELOG.md).
-
-## Servicios y datos
-
-Sin GitHub Actions, despliegue automático, analítica ni llamadas a APIs de pago.
-Las marcas permanecen en tu navegador. El repositorio conserva su situación de
-licencia; esta actualización no añade una licencia ni lo relicencia.
+Sin analítica, clasificación online, cuentas, llamadas de IA, despliegue automático
+ni workflows de Actions. Las marcas son locales y editables por su propietario.
+Esta actualización conserva la situación de licencia del repositorio.

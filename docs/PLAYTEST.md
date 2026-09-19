@@ -1,6 +1,6 @@
 # Local playtest checklist
 
-Start with Node 20+ and `npm start`. Open http://127.0.0.1:8000.
+Run `npm run validate` first. Start with Node 20+ and `npm start`. Open http://127.0.0.1:8000.
 
 ## Story playtest: La huella
 
@@ -21,11 +21,45 @@ Start with Node 20+ and `npm start`. Open http://127.0.0.1:8000.
 7. Cross the open gate. The first echo appears in the journal and on the results
    screen at the exit. No fleeting toast should be the only way to read it.
 8. Retry: the clue, sequence and gate reset. Compare the best record after reloading.
-   Story has one playable level; the next chapter is a teaser, not a continue button.
+   Choose SIGUIENTE CÁMARA: level 002 starts and is unlocked in the map. Reload and
+   verify that it is still available; level 003 stays locked until 002 is completed.
 9. Repeat with sound OFF and reduced motion ON. Numbers, pulse circles, text and
    gate shape must explain the puzzle. With sound ON, verify 1/2/3 audible pulses.
 10. On a phone, check the objective panel, jump/arrow controls and ECOS at portrait
     and landscape sizes. Open/close the journal using touch; try simultaneous move/jump.
+
+## Campaign and replay gates
+
+Use an earned save, or a clearly marked local QA backup, to reach later chapters.
+Do not treat imported QA achievements as a real player completion.
+
+| Chamber | Exercise | Expected behavior |
+|---|---|---|
+| 010 | Longer memory and optional relic | Hint remains readable; repeat does not remove earned stars |
+| 011 | Reverse the mirrored list | Following it literally fails; reversed order opens the seal |
+| 021 | Land with wrong/right horizontal direction | Error states the direction; correct approach advances |
+| 031 | Closed versus incomplete rings | A closed-ring copy fails even with the matching visible number |
+| 041 | Leave a charging platform early | Its hold resets; completed earlier steps stay |
+| 051 | Compare printed timestamps | Chronological order, not left-to-right or label order, solves |
+| 061 | Swap Nox/Luma repeatedly | Independent positions; returning to a resting pad does not reactivate it |
+| 071 | Toggle any board, then solve left to right | Standing cannot toggle repeatedly; all lights off opens the seal |
+| 081 | Land during active music and then silence | Visible countdown explains the window; sound OFF remains playable |
+| 095 | Combine constraints and make a late mistake | Completed blocks stay; the next constraint is visible |
+| 100 | Approach the final exit with Nox, then Luma | Nox waits; Luma can cross and complete the story |
+
+Progress and replay checks:
+
+1. Complete without relic; repeat with it. Stars accumulate without losing earlier ones.
+2. Practice permits completion and relic stars, but does not grant the clean standard star.
+3. Export a JSON copy, import it in another browser, and verify chapter selection.
+4. Import malformed/oversized JSON. Existing progress must stay intact.
+5. Block storage. Play must still work; the warning and export path must remain usable.
+6. Start an expedition with a named code, intensity and length. Restart: layout is identical.
+7. Complete a room, leave and use CONTINUAR. Resume at the next entrance, not a random route.
+8. Expert/Master: pause or open the journal while the memory countdown is active. It freezes.
+9. Abismo: confirm bounded platform widths and rhythm windows; more depth must not shrink them forever.
+10. Resize/rotate on a high-relic or cooperative chamber. Check the objective panel does not
+    obscure the player, relic or touch controls. Inspect short portrait and landscape heights.
 
 ## Arcade regression playtest
 
@@ -60,9 +94,10 @@ node tests/browser-smoke.mjs
 ```
 
 Screenshots go to ignored `build/screenshots/`. This checks menu mode changes,
-story introduction/journal/restart, arcade start, movement/jump, pause/resume, focus
-loss, mobile layout/controls and page errors. Full story completion is covered by
-the engine test and the human checklist above, not the browser smoke.
+story introduction/journal/restart, keyboard completion of level 001, save/next, map,
+expedition configuration, backup import, switching to Luma, arcade movement, pause,
+mobile layout/controls and page errors. All 100 rooms are covered by the engine pilot;
+the browser smoke does not claim to complete all of them.
 Inspect screenshots manually; automated assertions do not establish visual polish.
 
 ## Design questions to measure

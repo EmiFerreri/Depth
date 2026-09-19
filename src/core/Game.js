@@ -5,10 +5,12 @@ import { movePlayer } from '../physics/PlayerPhysics.js';
 import { sweptRect, sweptCircle } from '../physics/Collision.js';
 import { StoryProgress } from '../story/StoryProgress.js';
 export class Game {
-  constructor(mode = 'flow', seed, assist = false) {
-    this.mode = mode; this.world = generateWorld(mode, seed); this.assist = assist;
-    this.story = mode === 'story' ? new StoryProgress() : null;
+  constructor(mode = 'flow', seed, assist = false, options = {}) {
+    this.mode = mode; this.world = generateWorld(mode, seed, options); this.assist = assist;
+    this.story = this.world.levelInfo ? new StoryProgress(this.world) : null;
     this.player = new Player(); this.state = 'ready'; this.time = 0;
+    this.activeCharacter = 'nox'; this.players = { nox: this.player };
+    if (this.story?.allowSwap) this.players.luma = new Player();
     this.score = 0; this.combo = 1; this.comboTime = 0; this.bestCombo = 1;
     this.collected = 0; this.hits = 0; this.checkpoint = 100; this.maxX = 100;
     this.sector = 0; this.bullets = []; this.events = []; this.railAwards = new Set();
@@ -36,6 +38,15 @@ export class Game {
     this.time += dt;
     const controls = { move: 0, jump: false, dash: false, down: false, shoot: false, autoRun: true, ...input };
     if (this.story) { controls.autoRun = false; controls.shoot = false; }
+    if (this.story?.allowSwap && controls.swap) {
+      this.activeCharacter = this.activeCharacter === 'nox' ? 'luma' : 'nox';
+      this.player = this.players[this.activeCharacter];
+      this.story.puzzle.touch(null);
+      // Returning to a character already resting on a pad is not a fresh landing.
+      const support = this.world.platforms.find(p => Math.abs(this.player.y + this.player.r - p.y) < 0.5 && this.player.x + this.player.r > p.x && this.player.x - this.player.r < p.x + p.w);
+      this.story.puzzle.contact = support?.pad ?? null;
+      this.emit('swap', this.player.x, this.player.y, `Ahora: ${this.activeCharacter === 'luma' ? 'Luma' : 'Nox'}`);
+    }
     const nearby = { ...this.world,
       platforms: this.world.platforms.filter(o => Math.abs(o.x - this.player.x) < 1000),
       rails: this.world.rails.filter(o => Math.abs(o.x - this.player.x) < 1000) };
@@ -45,7 +56,7 @@ export class Game {
       if (event === 'rail' && !this.railAwards.has(this.player.rail.id)) { this.railAwards.add(this.player.rail.id); this.reward(40); }
     }
     const p = this.player;
-    if (this.story) this.story.step(this, landing);
+    if (this.story) this.story.step(this, landing, dt);
     if (p.x > this.maxX) { this.score += (p.x - this.maxX) * 0.05; this.maxX = p.x; }
     this.comboTime = Math.max(0, this.comboTime - dt); if (!this.comboTime) this.combo = 1;
     const sector = Math.min(this.world.sectors - 1, Math.floor(p.x / B.sectorLength));
@@ -92,6 +103,12 @@ export class Game {
       }
     }
     this.bullets = this.bullets.filter(b => b.life > 0);
-    if (p.x >= this.world.length - 30) { this.score += Math.max(0, this.world.sectors * 200 - this.time * 4); this.maxX = this.world.length; this.state = 'finished'; this.emit('finish'); }
+    if (p.x >= this.world.length - 30) {
+      if (this.mode === 'story' && this.story.spec.level === 100 && this.activeCharacter !== 'luma') {
+        this.story.status = 'Nox sostiene la salida. Cambia a Luma con Q y cruza con ella.';
+      } else {
+        this.score += Math.max(0, this.world.sectors * 200 - this.time * 4); this.maxX = this.world.length; this.state = 'finished'; this.emit('finish');
+      }
+    }
   }
 }

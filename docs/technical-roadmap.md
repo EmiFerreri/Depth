@@ -5,13 +5,17 @@
 > See [architecture and current limits](ARCHITECTURE.md) and the
 > [audit](AUDIT-2026-09-19.md) before treating items below as completed.
 
-## Current story milestone (0.3)
+## Current story milestone (0.4)
 
-Completed: La huella, its clue/sequence/gate, introduction, journal, first echo and
-engine regression tests. Next: browser/audio/touch playtest, tune clue readability,
-then author level 002. The canonical [story](story-bible.md) and [100-level outline](100-level-outline.md)
-replace the earlier narrative proposal. The full story, alternating Luma control,
-cooperative puzzles and finale still need implementation.
+Completed: 100 deterministic story chambers, ten rule families, Nox/Luma switching,
+seeded expeditions, chamber saves, unlock map, optional relics, stars and local backup
+merge. Complete pilot runs and reports are available via `npm run validate`.
+
+Next: browser/audio/touch sign-off, human difficulty playtests, individually authored
+rooms, custom controls and a local editor. The [story](story-bible.md) remains the
+narrative reference; not every scene in the [original level design](100-level-outline.md)
+is implemented literally. Follow the [longevity plan](LONGEVITY.md) for production
+priorities; historical phases below are not a completion checklist.
 
 ## Phase 1 — Movement Foundation
 - fixed timestep physics

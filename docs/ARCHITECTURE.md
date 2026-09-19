@@ -1,82 +1,106 @@
-# DEPTH 0.3 architecture
+# DEPTH 0.4 architecture
 
-The playable entry is `index.html` → `src/main.js`. Modules are native ES modules,
-with no framework, production package dependencies, build service or remote API.
+`index.html` loads `src/main.js` as a native ES module. There is no framework,
+production dependency, build service, remote API or backend.
 
 | Module | Responsibility | Boundary |
 |---|---|---|
-| `core/Game.js` | State transitions, score, combat, pickups, checkpoints | Receives one input snapshot and a fixed step; emits events |
-| `core/Time.js` | 120 Hz accumulator, bounded catch-up | Display timing cannot alter physics step size |
-| `core/Input.js` | Keyboard, mouse and multipointer touch | Edge-triggered jump/dash; clears controls on focus loss |
-| `physics/PlayerPhysics.js` | Integration, bounds, platforms, rail entry | Coordinates independent of screen dimensions |
-| `physics/Collision.js` | Segment sweeps and one-way platform crossing | Pure functions, unit tested |
-| `physics/RailPhysics.js` | Parametric rail samples and tangent motion | Stylized game physics; not an energy-conserving simulator |
-| `world/LevelGenerator.js` | Four arcade modes plus the authored story entry | Fresh RNG per world; UTC daily seed |
-| `world/StoryLevel.js` | Authored La huella geometry, clue, pads and gate | Fresh world for every run; precise manual movement |
-| `story/SequencePuzzle.js` | Distinct-contact sequence 1 → 3 → 2 | Wrong inputs reset progress; solve is latched |
-| `story/StoryProgress.js` | Discovery, journal, puzzle events and gate | Runs after movement and before distance/finish checks |
-| `story/StoryData.js` | Shared narrative text and chapter names | Script data; later chapters are not playable |
-| `render/StoryRenderer.js` | Incomplete rings, pad symbols and gate state | Numbers and shapes accompany color and audio |
-| `render/Renderer.js` | Canvas, camera, trails, event particles | Render-only randomness never affects layout or score |
-| `audio/Audio.js` | Short synthesized feedback tones | Starts after user gesture; disconnects completed oscillators |
-| `core/Storage.js` | Validated, bounded local best scores and times | Failures handled; practice/standard and auto/manual records separated |
-| `main.js` | DOM, dialogs, mode selection, HUD and integration | No DOM dependency in engine tests |
+| `core/Game.js` | Run lifecycle, movement integration, combat, score, swapping and finish | Fixed-step input snapshots; no DOM |
+| `core/Time.js` | 120 Hz clock and bounded catch-up | Max 12 physics steps per display frame |
+| `core/Input.js` | Keyboard, mouse and multipointer touch | Edge actions, dialog isolation, release on blur |
+| `physics/PlayerPhysics.js` | Integration, platforms, bounds and rail entry | Returns supporting platform ID; coordinates independent of viewport |
+| `physics/Collision.js` | Swept collision and one-way landing | Pure geometry |
+| `physics/RailPhysics.js` | Parametric rail movement | Stylized y(x) curves, not energy-conserving 360° loops |
+| `story/Campaign.js` | Versioned chamber specifications, clue text, difficulty and seed policy | Pure deterministic data generation |
+| `story/SequencePuzzle.js` | Ordered contacts, direction, identity, hold, pulse and deadlines | Progress and error events; solved state latched |
+| `story/SwitchPuzzle.js` | Triangular Lights Out puzzle | Solvable binary board with contact debouncing |
+| `story/StoryProgress.js` | Discovery, journal, puzzle integration, full-height seal and echo | Runs before distance score and completion |
+| `world/StoryLevel.js` | Geometry, authentic/false pads, hazards and optional relic | One camera/room loaded at a time |
+| `world/LevelGenerator.js` | Arcade routes and narrative world dispatch | Original four arcade patterns remain |
+| `render/Renderer.js`, `StoryRenderer.js` | Canvas, camera, effects and rule presentation | Render-only randomness |
+| `audio/Audio.js` | Synthesized tones and counted pad pulses | User gesture unlock; optional for solving |
+| `core/Storage.js` | Up to 100 local score/time entries | Keys separate mode, generator identity, practice and controls |
+| `core/Progress.js` | Stable campaign achievements, unlocks, backup merge and expedition checkpoint | Validated schema, 100 campaign records, one active expedition |
+| `main.js` | Menu, map, dialogs, save integration, input and HUD | Browser adapter for the pure engine |
 
-Simulation units: fixed world height 720, sphere radius 14; velocities in units/s,
-gravity in units/s². Render scaling and screen rotation do not regenerate objects.
-`Game.step()` is driven at 1/120 s by `FixedClock`; callers should use that clock.
-At most 12 physics steps execute per rendered frame, discarding excess real time
-after a stall. Timers measure simulated active play, not wall-clock time.
+```mermaid
+flowchart TD
+    A["Mode, code and progress"] --> B["Versioned chamber specification"]
+    B --> C["Geometry"]
+    B --> D["Puzzle controller"]
+    C --> E["Fixed-step movement"]
+    E --> D
+    D --> F["Gate and completion"]
+    F --> G["Local progress"]
+    G --> A
+```
 
-## Lifecycle
+## Simulation and lifecycle
 
-`ready → running → paused → running → finished`. Restart constructs a new Game
-with the selected mode/seed and clears input, clock, camera and temporary effects.
-On blur or document hiding, play pauses and held controls are released. Resume is
-explicit. Native `dialog` provides focus trapping for pause, results, story introduction and journal.
-Story starts in `ready` behind its introduction; the begin button enters `running`.
-Opening the journal pauses simulation, and closing it explicitly resumes. Game hotkeys
-are ignored while focus is inside a dialog, so Space and Escape cannot leak into play.
+World height: 720 units; floor: 594; sphere radius: 14. Velocities are units/s,
+gravity is units/s². The clock discards excess real time after a stall. Timers measure
+simulated active play, not wall-clock time. Pause, journal and hidden tabs stop it.
 
-## Scoring and progression
+Lifecycle: ready → running ↔ paused → finished. Introduction remains in ready.
+Each completed narrative chamber ends with a result and an explicit next button.
+The next chamber creates a fresh Game. Replaying does not remove achievements.
 
-Score comes from new forward distance, once-only pickups/rail rewards, defeated
-drones and a completion time bonus. Standing still does not generate points.
-Going backwards does not re-award distance. Every sector has a safe checkpoint;
-three hits return the sphere there. Rewards already collected stay consumed.
-Practice prevents checkpoint resets and has separate records. The elapsed timer
-continues after damage, so checkpoint resets do not improve time artificially.
+Nox and Luma have separate Player instances in cooperative chambers. The inactive
+character freezes in place. Returning to a supported character preserves contact;
+only leaving and landing again activates that pad. The final story exit requires Luma.
 
-The 100-sector mode repeats four authored chunk patterns with deterministic
-variations and increasing hazard widths. It is not 100 handcrafted unique levels.
-The original campaign and level prototypes remain under `game/` for reference.
+## Difficulty and generation
 
-## Story level
+Story maps levels 1–100 to ten chapter families. Chamber identity is `story-v4:level`.
+Expedition identity includes version, normalized seed, intensity, run length and room.
+A deterministic deck places each of the nine basic families once per ten rooms;
+the combined family closes each deck. No adjacent deck boundary repeats that family.
 
-Story forces manual movement and disables combat. Its world supplies a 270 units/s
-speed in both directions and a response coefficient of 14 for more deliberate
-landing. Arcade retains its existing speed, momentum and controls.
+Difficulty increases with story depth or expedition depth/intensity, then caps at 1.
+Bounds protect minimum platform widths and pulse windows. Chapter wave lengths ease
+slightly when a new rule is introduced. See `Campaign.js` and the [audit](AUDIT-0.4.md).
 
-Physics reports the platform currently supporting a downward landing. The sequence
-controller remembers that contact, so standing still counts once. Leaving and landing
-again is a fresh input. Mistakes clear the sequence without damage or clue loss.
-The solve bonus is awarded once; revisiting pads never awards it again.
+A generated room has at most eight puzzle pads, a bounded number of ground hazards
+and one relic. Completed worlds are discarded on advancement. Abismo supports up to
+100,000 rooms per run; it does not instantiate that many rooms or claim mathematical infinity.
 
-The locked gate clamps horizontal travel across the entire playable height before
-scoring distance or testing completion. Neither dash nor an airborne route bypasses
-it. After solving, crossing the echo location reveals the message even if the player
-is above the ring, avoiding a missed story beat. The message is repeated at completion.
+## Puzzle contracts
 
-The journal contains only discoveries from the current run plus the prologue. It is
-not persisted or unlocked by an arcade record. Restart makes a fresh puzzle and world.
-The 100-level narrative outline is a roadmap; only La huella is playable in Story.
+A contact is debounced until the player leaves. A sequence step may require pad,
+movement direction, character, continuous residence or an open rhythm window. Wrong
+inputs explain which constraint failed. Advanced sequences preserve completed blocks.
+Only Expert/Master expeditions apply an active-play memory deadline; the journal pauses it.
 
-## Deliberate limits
+Switch pad i toggles bit i and bit i+1, except the final pad, which toggles itself.
+This triangular transform can always be solved by addressing lit bits left to right.
+Initial boards are made from a known nonempty solution. Repeated contact does not toggle.
 
-- Swept expanded rectangles approximate sphere collisions conservatively at corners.
-- Rails implement a single-valued y(x) arc, not 360-degree loops or energy conservation.
-- Local scores are editable by their owner; there is no trusted global leaderboard.
-- Best records persist; in-progress campaigns and settings do not yet persist.
-- Gamepad, remappable input, full nonvisual play, replays and custom level editing are pending.
-- Real browser/device performance and visual accessibility require the browser gate.
-- No backend, analytics, accounts, telemetry transmission, AI requests or Actions workflow.
+The locked seal clamps x across the complete playable height before scoring or finish.
+Infinite jumps cannot bypass it. The echo is collected when crossing its x boundary
+after solving, including airborne traversal. Optional relics use swept pickup collision.
+
+## Save and score contracts
+
+- Completion alone unlocks the next story chamber; no stars or grind are required.
+- Stars are independent cumulative achievements: complete, clean in standard mode,
+  and relic. Clean means no puzzle mistakes and no impacts in that attempt.
+- JSON schema `depth.journey.v1` validates records, finite times, seed length, depth,
+  intensity and route length. Imports merge best time and earned achievements.
+- Legacy 0.3 first-level records unlock chamber 2 without granting unproven medals.
+- Expedition save records the current chamber entrance; completion advances that checkpoint.
+- Interrupted chambers restart from their entrance. Exact physics state, partial puzzles,
+  settings and all arcade marks are not included in exported journey backups.
+- Score comes from new distance, once-only pickups and puzzle completion. Standing still
+  or revisiting a solved pad cannot farm score. Arcade checkpoints preserve used rewards.
+- Save failures are surfaced, while the in-memory game stays playable and exportable.
+
+## Validation and limitations
+
+`npm run validate` invokes Node directly for regressions, syntax and complete pilot runs.
+It emits Markdown/JSON reports and fails its process exit code on a failed gate.
+The input-only pilot knows solutions; it is evidence of feasibility, not human playtesting.
+
+Canvas layout, actual audio, touch ergonomics, performance and visual accessibility
+still require real-browser sign-off. Other limits include no gamepad/remapping,
+full nonvisual play, replay files, custom authored-room editor, trusted leaderboard
+or online synchronization. See [PLAYTEST.md](PLAYTEST.md) and [LONGEVITY.md](LONGEVITY.md).

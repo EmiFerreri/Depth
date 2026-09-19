@@ -14,6 +14,7 @@ export class Renderer {
     this.viewWidth = this.width < 700 ? 900 : Math.max(1100, this.width / this.height * 720);
     this.scale = Math.min(this.width / this.viewWidth, this.height / 720);
     this.offsetX = (this.width - this.viewWidth * this.scale) / 2; this.offsetY = (this.height - 720 * this.scale) / 2;
+    if (this.storyMode && this.width < 700) this.offsetY += Math.min(90, this.height * 0.12);
   }
   worldPoint(point) { return { x: (point.x - this.offsetX) / this.scale + this.camera.x, y: (point.y - this.offsetY) / this.scale }; }
   reset() { this.camera.reset(); this.particles = []; this.trail = []; this.shake = 0; }
@@ -31,6 +32,7 @@ export class Renderer {
     this.particles = this.particles.slice(-180);
   }
   draw(game, dt) {
+    if (this.storyMode !== !!game.story) { this.storyMode = !!game.story; this.resize(); }
     const c = this.ctx, p = game.player, world = game.world;
     this.camera.update(p, this.viewWidth, dt);
     const cam = this.camera.x;
@@ -41,12 +43,12 @@ export class Renderer {
     c.strokeStyle = '#e4e3dd'; c.lineWidth = 1;
     for (let x = -(cam * 0.15 % 90); x < this.viewWidth; x += 90) { c.beginPath(); c.moveTo(x, 100); c.lineTo(x, 620); c.stroke(); }
     for (let y = 144; y < 650; y += 90) { c.beginPath(); c.moveTo(0, y); c.lineTo(this.viewWidth, y); c.stroke(); }
-    c.fillStyle = '#e6e5df'; c.font = 'bold 240px Arial'; c.textAlign = 'right'; c.fillText(String(game.sector + 1).padStart(2, '0'), this.viewWidth - 45, 545);
+    c.fillStyle = '#e6e5df'; c.font = 'bold 240px Arial'; c.textAlign = 'right'; c.fillText(String(game.story?.spec.level || game.sector + 1).padStart(2, '0'), this.viewWidth - 45, 545);
     c.textAlign = 'left';
     c.strokeStyle = '#969892'; c.beginPath(); c.moveTo(0, B.floor); c.lineTo(this.viewWidth, B.floor); c.stroke();
     const visible = (x, w = 50) => x + w > cam - 100 && x < cam + this.viewWidth + 100;
     c.save(); c.translate(-cam, 0);
-    for (let i = Math.max(0, Math.floor(cam / B.sectorLength)); i <= Math.min(world.sectors, Math.ceil((cam + this.viewWidth) / B.sectorLength)); i++) {
+    for (let i = Math.max(0, Math.floor(cam / B.sectorLength)); !game.story && i <= Math.min(world.sectors, Math.ceil((cam + this.viewWidth) / B.sectorLength)); i++) {
       const x = i * B.sectorLength;
       c.strokeStyle = '#c8cac2'; c.setLineDash([3, 8]); c.beginPath(); c.moveTo(x, 190); c.lineTo(x, B.floor); c.stroke(); c.setLineDash([]);
       c.fillStyle = '#777c73'; c.font = '10px monospace'; c.fillText(i === world.sectors ? 'FINISH' : `CHECKPOINT / ${String(i + 1).padStart(2, '0')}`, x + 10, 211);
@@ -73,7 +75,9 @@ export class Renderer {
       if (item.used || !visible(item.x)) continue;
       const pulse = this.reduced ? 0 : Math.sin(game.time * 3 + item.x) * 3;
       c.save(); c.translate(item.x, item.y + pulse);
-      if (item.kind === 'shard') {
+      if (item.kind === 'relic') {
+        c.strokeStyle = '#8c7030'; c.lineWidth = 2; c.rotate(Math.PI / 4); c.strokeRect(-11, -11, 22, 22); c.fillStyle = '#8c7030'; c.fillRect(-4, -4, 8, 8);
+      } else if (item.kind === 'shard') {
         const spectrum = ['#be493f','#bc722c','#968619','#42865e','#487cab','#6865a1','#92658f'];
         const color = game.sector < 9 ? '#353a33' : spectrum[(game.sector === 99 ? Math.floor(item.x / 80) : Math.floor((game.sector - 9) / 3)) % spectrum.length];
         c.rotate(Math.PI / 4); c.fillStyle = color; c.fillRect(-5, -5, 10, 10); c.strokeStyle = '#a8ada3'; c.strokeRect(-9, -9, 18, 18);
@@ -102,7 +106,8 @@ export class Renderer {
       for (const t of this.particles) { c.globalAlpha = t.life * 2; c.fillStyle = t.color; c.fillRect(t.x, t.y, 3, 3); }
     }
     c.globalAlpha = p.invulnerable && Math.floor(game.time * 12) % 2 ? 0.45 : 1;
-    c.fillStyle = '#212820'; c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill();
+    c.fillStyle = game.activeCharacter === 'luma' ? '#795b8d' : '#212820'; c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill();
+    if (game.activeCharacter === 'luma') { c.strokeStyle = '#795b8d'; c.beginPath(); c.arc(p.x, p.y, p.r + 5, 0.3, Math.PI * 1.83); c.stroke(); }
     c.strokeStyle = '#f7f9ec'; c.lineWidth = 1.5; c.beginPath(); c.arc(p.x, p.y, 5, 0, Math.PI * 2); c.stroke();
     c.globalAlpha = 1;
     if (p.shield || p.dashTime) { c.strokeStyle = '#329c7c'; c.beginPath(); c.arc(p.x, p.y, p.r + 7, 0, Math.PI * 2); c.stroke(); }

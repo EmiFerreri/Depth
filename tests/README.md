@@ -1,13 +1,18 @@
-# Validation
+# Local validation
 
-Run `npm test` for Node regression tests, and `npm run check` for syntax/JSON checks.
-No dependency installation is needed for these commands.
+Run `npm run validate` for regression, syntax and complete campaign/expedition gates.
+Reports are written to ignored `build/validation/report.md`, `report.json`, `levels.md`
+and `levels.json`. The command uses Node directly and returns nonzero on failure.
+No dependency installation is needed.
 
-Real Chromium UI checks are optional: see [playtest instructions](../docs/PLAYTEST.md).
-The implementation environment could not complete that browser gate; it is not
-reported as passed. Browser screenshots must be inspected manually.
+Separate commands: `npm test`, `npm run check`, `npm run audit:levels`.
 
-`story.test.js` covers the landing sequence, mistakes, gate sweeps at different
-heights, forced manual control, journal discovery, pause/restart and reward farming.
-A complete control-driven run walks/jumps through a wrong attempt, the correct
-sequence, the first echo and the exit. It never teleports to solve the puzzle.
+`story.test.js` retains the first-level regressions. `campaign.test.js` covers ten
+rule families, every campaign room, a demanding 36-room expedition, deterministic
+seeds, bounded generation, binary boards, deadlines, saves, imports and migration.
+`helpers/story-player.js` solves with movement/jump/swap inputs. It knows the solution
+and physics; its times and lack of errors do not measure human difficulty or enjoyment.
+
+Real Chromium UI checks are optional: [playtest instructions](../docs/PLAYTEST.md).
+They are not reported as passed in this environment. Inspect the screenshots manually,
+and separately assess audio, touch ergonomics, readability and human pacing.

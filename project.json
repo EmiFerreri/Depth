@@ -1,6 +1,6 @@
 {
   "name": "DEPTH",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "levels_planned": 100,
   "rounds": 10,
   "genre": [
@@ -27,9 +27,21 @@
   "quality_status": "engine-validated; browser-signoff-pending",
   "story": {
     "title": "Ecos de ti",
-    "playable_levels": 1,
-    "planned_levels": 100,
-    "playable_chapter": "La huella",
+    "playable_chambers": 100,
+    "chapters": 10,
+    "rule_families": 10,
+    "content_model": "deterministic chambers based on rule families; not 100 individually illustrated scenes",
     "canon": "docs/story-bible.md"
-  }
+  },
+  "expeditions": {
+    "seeded": true,
+    "intensities": 5,
+    "lengths": [
+      12,
+      36,
+      100000
+    ],
+    "save": "chamber boundary"
+  },
+  "validation_command": "npm run validate"
 }
