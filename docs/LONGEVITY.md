@@ -8,7 +8,7 @@ Más niveles, más velocidad o más premios no equivalen por sí solos a más di
 
 ## Lo que existe hoy
 
-| Horizonte de juego | Motivo para volver | Implementación 0.4 |
+| Horizonte de juego | Motivo para volver | Implementación 0.5 |
 |---|---|---|
 | Una sesión | Entender una regla y abrir la siguiente cámara | Pistas, ayuda, feedback reversible, guardado por cámara |
 | Varias sesiones | Seguir la historia y aprender reglas nuevas | 100 cámaras, diez capítulos, mapa y Luma controlable |
@@ -73,3 +73,8 @@ cada regla o cámara, y la respuesta de quienes juegan.
 
 La siguiente acción concreta es jugar una cámara de cada familia con una persona
 que no conozca el guion y anotar dónde deja de comprender lo que el juego pide.
+
+La versión 0.5 incorpora cinco mundos seleccionables, veinte escenas opcionales,
+insignias, capacidades, obstáculos temporales, historial y una API procedural local.
+Es una base para crear y evaluar rutas; el editor visual y la validación humana de
+retención siguen pendientes. Véanse [mundos](WORLDS.md) y [API](api/README.md).

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.0 — Mundos que recuerdan
+
+- Shared catalog: five worlds, ten chapters, 100 rooms, three characters, abilities,
+  obstacles, rewards and twenty authored optional memories.
+- Playable world selection, architectural motifs, pulse barriers, moving sentinels,
+  collapsing bridges, springs and updrafts; original introductory chamber retained.
+- Nox's Anchor and Luma's Veil with independent cooldowns, protection and energy pickups.
+- Atlas with persistent discovered scenes, world badges and a grouped campaign map.
+- Score ledger and result breakdown; bounded 200-attempt history with reproducible replay settings.
+- Backups merge memories, deduplicated history and achievements; legacy expeditions resume v4.
+- Local HTTP API: catalog, individual/batched generation, structural validation, OpenAPI
+  and PowerShell/JavaScript examples. Body/route limits and same-origin/loopback boundary.
+- Generation v5 shared by browser/API; v4 source and fixtures preserve existing route geometry.
+- 58 regressions, 71 syntax checks and 146 input-only room completions pass locally.
+
+Browser/audio/touch sign-off remains pending. API is local, structural validation does
+not run physics, and generated variety does not establish long-term player retention.
+
 ## 0.4.0 — El descenso
 
 - 100 playable story chambers and ten rule families with bounded progressive difficulty.

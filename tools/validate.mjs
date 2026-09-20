@@ -3,7 +3,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 // Node directly, without shell quoting or platform-specific npm.cmd assumptions.
 const gates = [
-  { name: 'Regresiones', args: ['--test', 'tests/engine.test.js', 'tests/input.test.js', 'tests/legacy.test.js', 'tests/story.test.js', 'tests/campaign.test.js'] },
+  { name: 'Regresiones', args: ['--test', 'tests/engine.test.js', 'tests/input.test.js', 'tests/legacy.test.js', 'tests/story.test.js', 'tests/campaign.test.js', 'tests/worlds.test.js', 'tests/api.test.js'] },
   { name: 'Sintaxis y JSON', args: ['tools/check.mjs'] },
   { name: 'Recorridos completos', args: ['tools/audit-levels.mjs'] },
 ];

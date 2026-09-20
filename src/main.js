@@ -5,6 +5,11 @@ import { Renderer } from './render/Renderer.js';
 import { Audio } from './audio/Audio.js';
 import { loadProfile, saveRecord } from './core/Storage.js';
 import { loadProgress, saveProgress, completeLevel, mergeProgress, stars } from './core/Progress.js';
+import { recordAttempt, earnedRewards } from './core/History.js';
+import { SCORE_LABELS } from './core/Score.js';
+import { WORLDS, worldForChapter } from './content/Catalog.js';
+import { renderAtlas, renderHistory, element } from './ui/Atlas.js';
+import { normalizeRequest } from './generation/Generator.js';
 import { MODES, CHAPTERS, BALANCE as B } from './config/balance.js';
 import { STORY, STORY_CHAPTERS } from './story/StoryData.js';
 import { LEVEL_NAMES } from './story/LevelNames.js';
@@ -16,6 +21,7 @@ try { storage = localStorage; } catch { storage = { getItem: () => null, setItem
 const profile = loadProfile(storage);
 let journey = loadProgress(storage, profile);
 let mode = 'story', game = new Game(mode, undefined, false, { level: journey.selected });
+let preparedRoute = null;
 let toastTimer = 0, previousTime = performance.now(), hudTimer = 0, lockedAutoRun = false;
 const input = new Input(canvas, togglePause, () => { if (game.state === 'running') restart(); }, openJournal);
 const isNarrative = value => value === 'story' || value === 'expedition';
@@ -29,7 +35,7 @@ function persist() {
 }
 function menuOptions() {
   return mode === 'story' ? { level: Number($('level-select').value) || journey.selected } :
-    { level: 1, seed: normalizeSeed($('exp-seed').value), intensity: Number($('exp-intensity').value), length: Number($('exp-length').value) };
+    { level: 1, seed: normalizeSeed($('exp-seed').value), intensity: Number($('exp-intensity').value), length: Number($('exp-length').value), generatorVersion: Number($('exp-version').value), worldId: $('exp-world').value || null };
 }
 function refreshBest() {
   const options = menuOptions(), preview = new Game(mode, options.seed, $('assist').checked, options);
@@ -63,7 +69,7 @@ function selectMode(value) {
   refreshBest();
 }
 function closeDialogs() {
-  for (const id of ['pause-dialog', 'result-dialog', 'story-intro', 'journal-dialog', 'map-dialog']) if ($(id).open) $(id).close();
+  for (const id of ['pause-dialog', 'result-dialog', 'story-intro', 'journal-dialog', 'map-dialog', 'atlas-dialog', 'history-dialog']) if ($(id).open) $(id).close();
 }
 function start(showIntro = true, options = menuOptions()) {
   closeDialogs(); input.clear(); clock.reset(); renderer.reset();
@@ -75,6 +81,8 @@ function start(showIntro = true, options = menuOptions()) {
   $('story-panel').hidden = !game.story;
   document.querySelector('[data-control="shoot"]').hidden = !!game.story;
   document.querySelector('[data-control="swap"]').hidden = !game.story?.allowSwap;
+  $('ability-use').hidden = !game.world.abilitiesEnabled;
+  document.querySelector('[data-control="ability"]').hidden = !game.world.abilitiesEnabled;
   $('swap-character').hidden = !game.story?.allowSwap;
   document.body.classList.toggle('story-playing', !!game.story);
   document.body.classList.add('playing'); canvas.tabIndex = -1; canvas.focus(); audio.unlock();
@@ -90,8 +98,9 @@ function start(showIntro = true, options = menuOptions()) {
   } else begin();
   updateHUD();
 }
-function expeditionCheckpoint(spec, level = spec.level) { return { level, seed: spec.seed, intensity: spec.intensity, length: spec.runLength }; }
+function expeditionCheckpoint(spec, level = spec.level) { return { level, seed: spec.seed, intensity: spec.intensity, length: spec.runLength, generatorVersion: spec.generatorVersion || 4, worldId: spec.worldChoice || null }; }
 function restart() {
+  if (recordAttempt(journey, game, 'restarted')) persist();
   const spec = game.story?.spec;
   start(false, spec ? { ...expeditionCheckpoint(spec), level: spec.level } : {});
 }
@@ -105,6 +114,7 @@ function togglePause() {
   else if (game.state === 'paused') { game.resume(); closeDialogs(); input.clear(); clock.reset(); previousTime = performance.now(); canvas.focus(); }
 }
 function menu() {
+  if (recordAttempt(journey, game, 'abandoned')) persist();
   closeDialogs(); input.clear(); clock.reset(); renderer.reset(); refreshJourney();
   game = new Game(mode, undefined, false, mode === 'story' ? { level: journey.selected } : {});
   $('menu').hidden = false; for (const id of ['hud', 'telemetry', 'touch-controls', 'story-panel']) $(id).hidden = true;
@@ -126,11 +136,13 @@ function closeJournal() {
   $('journal-dialog').close(); input.clear(); clock.reset(); previousTime = performance.now(); game.resume(); canvas.focus();
 }
 function finish() {
+  const previousBadges = new Set(earnedRewards(journey).filter(r => r.earned).map(r => r.id));
+  recordAttempt(journey, game, 'completed');
   const saved = saveRecord(storage, profile, recordKey(), Math.floor(game.score), game.time);
   $('result-score').textContent = Math.floor(game.score).toLocaleString('es'); $('result-time').textContent = formatTime(game.time);
   $('result-combo').textContent = `×${game.bestCombo}`; $('result-hits').textContent = game.hits;
   $('story-result').hidden = !game.story; $('next-level').hidden = true;
-  let progressSaved = true;
+  let progressSaved = persist();
   if (game.story) {
     const spec = game.story.spec, result = completeLevel(journey, game), next = nextLevel(spec);
     if (mode === 'expedition') journey.expedition = next ? expeditionCheckpoint(spec, next) : null;
@@ -148,12 +160,16 @@ function finish() {
   } else {
     $('result-title').textContent = 'Flow found.'; $('result-label').textContent = 'RUTA COMPLETADA'; $('again').firstChild.textContent = 'OTRA TRAYECTORIA ';
   }
+  const newBadges = earnedRewards(journey).filter(r => r.earned && !previousBadges.has(r.id));
+  $('reward-note').textContent = newBadges.map(r => `★ Insignia obtenida: ${r.name}`).join(' · ');
+  $('score-breakdown').replaceChildren();
+  for (const [key, label] of Object.entries(SCORE_LABELS)) { $('score-breakdown').append(element('dt', label), element('dd', game.scoreLedger[key].toFixed(1))); }
   $('record-note').textContent = saved && progressSaved ? 'Avance y marcas guardados en este navegador.' : 'No se pudo guardar todo. Exporta el progreso desde el menú antes de cerrar.';
   input.clear(); $('result-dialog').showModal();
 }
 function updateHUD() {
   const story = game.story, spec = story?.spec;
-  $('mode-label').textContent = spec ? `${String(spec.chapter + 1).padStart(2, '0')} / ${spec.chapterTitle}` : `${MODES[mode].name} / ${CHAPTERS[Math.floor(game.sector / 10) % 10]}`;
+  $('mode-label').textContent = spec ? `${spec.worldName || worldForChapter(spec.chapter).name} / ${spec.chapter + 1}` : `${MODES[mode].name} / ${CHAPTERS[Math.floor(game.sector / 10) % 10]}`;
   $('sector').firstChild.textContent = String(spec?.level || game.sector + 1).padStart(2, '0');
   $('sector').lastElementChild.textContent = ` / ${spec ? spec.mode === 'story' ? TOTAL_LEVELS : spec.runLength || '100k' : game.world.sectors}`;
   $('score').textContent = String(Math.floor(game.score)).padStart(6, '0'); $('time').textContent = formatTime(game.time);
@@ -163,6 +179,9 @@ function updateHUD() {
   $('dash-bar').style.width = `${Math.max(0, 1 - game.player.dashCooldown / B.dashCooldown) * 100}%`;
   $('dash-label').textContent = game.player.dashCooldown ? 'RECARGANDO' : 'DASH LISTO';
   if (story) {
+    const cooldown = game.player.abilityCooldown;
+    $('ability-use').textContent = `${game.activeCharacter === 'luma' ? 'VELO' : 'ANCLA'} · ${cooldown > 0 ? cooldown.toFixed(1) + ' s' : 'F'}`;
+    $('ability-use').disabled = cooldown > 0;
     if ($('story-objective').textContent !== story.status) $('story-objective').textContent = story.status;
     const total = spec.rules.kind === 'switch' ? spec.rules.count : story.puzzle.sequence.length;
     $('memory-progress').textContent = story.gateOpen ? 'PUERTA ABIERTA' : `${spec.rules.name.toUpperCase()} · ${story.puzzle.progress}/${total}${story.puzzle.checkpoint ? ` · BLOQUE ${story.puzzle.checkpoint}` : ''}`;
@@ -183,6 +202,7 @@ function updateHUD() {
 // Snapshot is read-only; it contains no way to mutate or solve a level.
 window.depth = Object.freeze({ snapshot: () => ({ state: game.state, mode: game.mode, x: game.player.x, y: game.player.y,
   hp: game.player.hp, score: game.score, time: game.time, sector: game.sector, seed: game.world.seed,
+  abilityUses: game.abilityUses, worldId: game.story?.spec.worldId || null, generatorVersion: game.story?.spec.generatorVersion || 4,
   bullets: game.bullets.length, combo: game.combo, character: game.activeCharacter,
   story: game.story ? { level: game.story.spec.level, kind: game.story.spec.rules.kind, clueFound: game.story.clueFound,
     progress: game.story.puzzle.progress, gateOpen: game.story.gateOpen, echoFound: game.story.echoFound, mistakes: game.story.puzzle.mistakes } : null }) });
@@ -198,6 +218,7 @@ function showMap() {
       button.addEventListener('click', () => { journey.selected = level; persist(); refreshJourney(); selectMode('story'); $('map-dialog').close(); $('start').focus(); });
       grid.append(button);
     }
+    if (chapter % 2 === 0) { const world = worldForChapter(chapter); $('map-chapters').append(element('h3', `${chapter / 2 + 1}. ${world.name}`, 'map-world'), element('p', world.objective)); }
     section.append(heading, grid);
     if (journey.records[(chapter + 1) * 10]) { const echo = document.createElement('p'); echo.textContent = getLevelSpec('story', { level: (chapter + 1) * 10 }).echo; section.append(echo); }
     $('map-chapters').append(section);
@@ -206,11 +227,15 @@ function showMap() {
 }
 document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => selectMode(button.dataset.mode)));
 $('level-select').addEventListener('change', () => { journey.selected = Number($('level-select').value); persist(); refreshBest(); });
-for (const id of ['assist', 'autorun', 'exp-intensity', 'exp-length', 'exp-seed']) $(id).addEventListener('change', refreshBest);
+for (const id of ['assist', 'autorun', 'exp-intensity', 'exp-length', 'exp-seed', 'exp-world', 'exp-version']) $(id).addEventListener('change', () => {
+  $('exp-world').disabled = $('exp-version').value === '4'; if ($('exp-world').disabled) $('exp-world').value = '';
+  clearPrepared(); refreshBest();
+});
+for (const world of WORLDS) { const option = element('option', world.name); option.value = world.id; $('exp-world').append(option); }
 $('exp-seed').value = challengeSeed();
-for (const period of ['daily', 'weekly']) $(`exp-${period}`).addEventListener('click', () => { $('exp-seed').value = challengeSeed(period); refreshBest(); });
-$('exp-new').addEventListener('click', () => { $('exp-seed').value = `ECO-${Math.random().toString(36).slice(2, 10).toUpperCase()}`; refreshBest(); });
-$('exp-resume').addEventListener('click', () => { const run = { ...journey.expedition }; $('exp-seed').value = run.seed; $('exp-intensity').value = run.intensity; $('exp-length').value = run.length; start(true, run); });
+for (const period of ['daily', 'weekly']) $(`exp-${period}`).addEventListener('click', () => { $('exp-seed').value = challengeSeed(period); clearPrepared(); refreshBest(); });
+$('exp-new').addEventListener('click', () => { $('exp-seed').value = `ECO-${Math.random().toString(36).slice(2, 10).toUpperCase()}`; clearPrepared(); refreshBest(); });
+$('exp-resume').addEventListener('click', () => { const run = { ...journey.expedition }; $('exp-seed').value = run.seed; $('exp-intensity').value = run.intensity; $('exp-length').value = run.length; $('exp-version').value = run.generatorVersion || 4; $('exp-world').value = run.worldId || ''; $('exp-world').disabled = $('exp-version').value === '4'; clearPrepared(); start(true, run); });
 $('map-open').addEventListener('click', showMap); $('map-close').addEventListener('click', () => $('map-dialog').close());
 $('export-progress').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([JSON.stringify(journey, null, 2)], { type: 'application/json' }));
@@ -221,7 +246,7 @@ $('import-progress').addEventListener('click', () => $('progress-file').click())
 $('progress-file').addEventListener('change', async event => {
   const file = event.target.files[0]; if (!file) return;
   try {
-    if (file.size > 100000) throw new Error('El archivo es demasiado grande.');
+    if (file.size > 1000000) throw new Error('El archivo es demasiado grande.');
     journey = mergeProgress(journey, JSON.parse(await file.text()));
     const saved = persist(); refreshJourney(); refreshBest();
     $('save-status').textContent = saved ? 'Progreso combinado. Conservamos tus mejores logros.' : 'Progreso cargado solo para esta sesión. Exporta antes de cerrar.';
@@ -246,6 +271,7 @@ $('story-begin').addEventListener('click', begin);
 $('journal-open').addEventListener('click', openJournal); $('journal-close').addEventListener('click', closeJournal);
 $('journal-dialog').addEventListener('cancel', event => { event.preventDefault(); closeJournal(); });
 $('swap-character').addEventListener('click', () => { if (game.state === 'running') input.actions.add('swap'); canvas.focus(); });
+$('ability-use').addEventListener('click', () => { if (game.state === 'running') input.actions.add('ability'); canvas.focus(); });
 $('sound').addEventListener('click', () => {
   audio.enabled = !audio.enabled; $('sound').setAttribute('aria-pressed', String(audio.enabled));
   $('sound').setAttribute('aria-label', `Sonido ${audio.enabled ? 'activado' : 'desactivado'}`); $('sound').lastElementChild.textContent = audio.enabled ? 'ON' : 'OFF';
@@ -254,6 +280,44 @@ $('sound').addEventListener('click', () => {
 $('fullscreen').addEventListener('click', async () => {
   try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
   catch { showToast('Pantalla completa no disponible en este navegador.'); }
+});
+function clearPrepared() {
+  preparedRoute = null; $('generated-status').textContent = ''; $('play-generated').hidden = true; $('download-generated').hidden = true;
+}
+$('atlas-open').addEventListener('click', () => {
+  renderAtlas($('atlas-content'), journey, worldId => {
+    $('exp-world').value = worldId; $('exp-version').value = '5'; $('exp-world').disabled = false; clearPrepared();
+    selectMode('expedition'); $('atlas-dialog').close(); $('exp-intensity').focus();
+  }); $('atlas-dialog').showModal();
+});
+$('history-open').addEventListener('click', () => {
+  renderHistory($('history-content'), journey, row => {
+    selectMode(row.mode); $('assist').checked = row.practice;
+    start(true, { level: row.level, seed: row.seed, intensity: row.intensity, length: row.length, generatorVersion: row.generatorVersion, worldId: row.worldChoice });
+  }); $('history-dialog').showModal();
+});
+for (const name of ['atlas','history']) $(`${name}-close`).addEventListener('click', () => $(`${name}-dialog`).close());
+$('generate-route').addEventListener('click', async () => {
+  const options = normalizeRequest({ mode: 'expedition', ...menuOptions() }), requested = JSON.stringify(options);
+  clearPrepared(); $('generate-route').disabled = true; $('generated-status').textContent = 'Preparando la cámara…';
+  try {
+    const response = await fetch('/api/v1/levels/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requested, signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error('Generador no disponible');
+    const envelope = await response.json(), params = normalizeRequest(envelope.parameters);
+    if (JSON.stringify(normalizeRequest({ mode: 'expedition', ...menuOptions() })) !== requested) return;
+    const local = new Game(params.mode, params.seed, false, params);
+    if (JSON.stringify(params) !== requested || JSON.stringify(local.world) !== JSON.stringify(envelope.world)) throw new Error('La versión del servidor y del juego no coincide');
+    preparedRoute = envelope;
+    $('generated-status').textContent = `${envelope.id} · ${local.world.levelInfo.worldName || worldForChapter(local.world.levelInfo.chapter).name} · ${local.story.spec.rules.name} · ${local.world.platforms.length} plataformas. Estructura comprobada.`;
+    $('play-generated').hidden = false; $('download-generated').hidden = false;
+  } catch { $('generated-status').textContent = 'No se pudo preparar la ruta en el servidor. Con npm start se habilita esta función; INICIAR EXPEDICIÓN también genera la ruta en tu navegador.'; }
+  finally { $('generate-route').disabled = false; }
+});
+$('play-generated').addEventListener('click', () => { if (preparedRoute) { selectMode('expedition'); start(true, preparedRoute.parameters); } });
+$('download-generated').addEventListener('click', () => {
+  if (!preparedRoute) return;
+  const url = URL.createObjectURL(new Blob([JSON.stringify(preparedRoute, null, 2)], { type: 'application/json' }));
+  const link = element('a'); link.href = url; link.download = `depth-ruta-v${preparedRoute.generatorVersion}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 function autoPause() { if (game.state === 'running') togglePause(); input.clear(); }
 addEventListener('blur', autoPause); document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
@@ -267,6 +331,7 @@ function frame(now) {
         if (event.type === 'boost') showToast('IMPULSO · conserva el momentum');
         if (event.type === 'gravity') showToast('GRAVEDAD LIGERA · 5 segundos');
         if (event.type === 'shield') showToast(game.player.shield ? 'ESCUDO ACTIVADO' : 'ESCUDO ABSORBIDO');
+        if (event.type === 'energy') showToast('ENERGÍA · 3 segundos menos de recarga');
         if (event.type === 'relic') showToast('RELIQUIA RECUPERADA · completa la cámara para guardarla');
         if (event.type === 'finish') finish();
       }

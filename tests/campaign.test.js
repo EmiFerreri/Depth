@@ -39,7 +39,7 @@ test('expeditions are reproducible, date-pinned and bounded even at extreme dept
   assert.equal(normalizeSeed('<script> scary / key'), 'SCRIPTSCARYKEY');
   for (let level = 1; level < 100000; level += 379) {
     const game = new Game('expedition', 'ABISMO', false, { level, intensity: 5, length: 0 });
-    assert.ok(game.world.platforms.length <= 8); assert.ok(game.world.pickups.length <= 1);
+    assert.ok(game.world.platforms.length <= 8); assert.ok(game.world.pickups.length <= 6);
     assert.ok(game.story.spec.rules.pulseOpen >= 1.6); assert.ok(game.world.motion.speed <= 320);
   }
 });

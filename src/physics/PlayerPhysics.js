@@ -4,7 +4,7 @@ import { railPoint, advanceRail } from './RailPhysics.js';
 export function movePlayer(p, input, world, dt, autoRun = true) {
   const events = [];
   let landing = null;
-  for (const timer of ['invulnerable', 'dashCooldown', 'dashTime', 'fireCooldown', 'detach', 'gravityTime']) p[timer] = Math.max(0, p[timer] - dt);
+  for (const timer of ['invulnerable', 'dashCooldown', 'dashTime', 'fireCooldown', 'detach', 'gravityTime', 'abilityCooldown', 'wardTime']) p[timer] = Math.max(0, (p[timer] || 0) - dt);
   if (input.jump) { p.vy = -B.jumpSpeed; p.rail = null; p.detach = 0.2; events.push('jump'); }
   if (input.dash && p.dashCooldown === 0) {
     p.vx = clamp(p.vx + B.dashImpulse * (input.move < 0 ? -1 : 1), -B.maxSpeed, B.maxSpeed);
@@ -22,7 +22,7 @@ export function movePlayer(p, input, world, dt, autoRun = true) {
       const response = world.motion?.response ?? (Math.abs(p.vx) > Math.abs(target) && input.move >= 0 ? 0.8 : 4.2);
       p.vx += (target - p.vx) * (1 - Math.exp(-response * dt));
     }
-    p.vy += B.gravity * (p.gravityTime ? 0.48 : 1) * (input.down ? 1.8 : 1) * dt;
+    p.vy += (B.gravity * (p.gravityTime ? 0.48 : 1) * (input.down ? 1.8 : 1) + (world.acceleration || 0)) * dt;
     p.x += p.vx * dt; p.y += p.vy * dt;
     for (const platform of world.platforms) {
       if (platformLanding(old.x, old.y, p.x, p.y, p.r, platform)) { p.y = platform.y - p.r; p.vy = 0; landing = platform.id; }

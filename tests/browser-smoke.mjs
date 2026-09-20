@@ -106,6 +106,19 @@ try {
   assert.match(await page.evaluate(() => window.depth.snapshot().seed), /PRUEBA-LOCAL:3:36/);
   await page.click('#pause'); await page.click('#quit');
   assert.equal(await page.locator('#exp-resume').isVisible(), true);
+  await page.click('#atlas-open');
+  assert.equal(await page.locator('.world-card').count(), 5);
+  await page.locator('.world-card .secondary').nth(2).click();
+  assert.equal(await page.locator('#exp-world').inputValue(), 'archives');
+  await page.click('.route-lab summary'); await page.click('#generate-route');
+  await page.waitForSelector('#play-generated:not([hidden])');
+  await page.click('#play-generated'); await page.click('#story-begin');
+  await page.keyboard.press('KeyF');
+  await page.waitForFunction(() => window.depth.snapshot().abilityUses === 1);
+  await page.click('#pause'); await page.click('#quit');
+  await page.click('#history-open');
+  assert.ok(await page.locator('.history-row').count() > 0);
+  await page.screenshot({ path: 'build/screenshots/history.png' }); await page.click('#history-close');
   // Exercise the backup import UI, never a private engine mutation.
   const records = Object.fromEntries(Array.from({ length: 94 }, (_, i) => [i + 1, { completed: true, clean: false, relic: false, bestTime: 100 }]));
   await page.locator('#progress-file').setInputFiles({ name: 'qa-progress.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 1, records, selected: 95 })) });

@@ -1,10 +1,7 @@
-import { BALANCE as B } from '../config/balance.js';
-import { getLevelSpec, shuffle } from '../story/Campaign.js';
-import { seededRandom } from './ChunkGenerator.js';
-import { addWorldFeatures } from './WorldFeatures.js';
-import { generateStoryLevel as generateV4 } from '../generation/v4/StoryLevel.js';
+import { BALANCE as B } from '../../config/balance.js';
+import { getLevelSpec, shuffle } from './Campaign.js';
+import { seededRandom } from '../../world/ChunkGenerator.js';
 export function generateStoryLevel(options = {}, mode = 'story') {
-  if (options.generatorVersion === 4) return generateV4(options, mode);
   const spec = getLevelSpec(mode, options), d = spec.difficulty;
   const first = mode === 'story' && spec.level === 1;
   const random = seededRandom(`${spec.id}:geometry`);
@@ -36,5 +33,5 @@ export function generateStoryLevel(options = {}, mode = 'story') {
   }
   // Optional high relic: a reason to take another route, never a requirement to advance.
   world.pickups.push({ id: 'memory-relic', kind: 'relic', x: first ? 1190 : 620 + gap * (count - 1) / 2, y: 240 - d * 80, r: 14, used: false });
-  return addWorldFeatures(world);
+  return world;
 }

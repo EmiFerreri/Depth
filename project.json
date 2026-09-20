@@ -1,6 +1,6 @@
 {
   "name": "DEPTH",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "levels_planned": 100,
   "rounds": 10,
   "genre": [
@@ -31,7 +31,10 @@
     "chapters": 10,
     "rule_families": 10,
     "content_model": "deterministic chambers based on rule families; not 100 individually illustrated scenes",
-    "canon": "docs/story-bible.md"
+    "canon": "docs/story-bible.md",
+    "worlds": 5,
+    "optional_memories": 20,
+    "catalog": "src/content/Catalog.js"
   },
   "expeditions": {
     "seeded": true,
@@ -41,7 +44,24 @@
       36,
       100000
     ],
-    "save": "chamber boundary"
+    "save": "chamber boundary",
+    "generator_versions": [
+      4,
+      5
+    ]
   },
-  "validation_command": "npm run validate"
+  "validation_command": "npm run validate",
+  "api": {
+    "version": 1,
+    "entry": "server/http.mjs",
+    "base_url": "http://127.0.0.1:8000/api/v1",
+    "openapi": "docs/api/openapi.json",
+    "batch_limit": 20,
+    "request_bytes_limit": 65536,
+    "hosting": "local only"
+  },
+  "history": {
+    "limit": 200,
+    "storage": "depth.journey.v1"
+  }
 }

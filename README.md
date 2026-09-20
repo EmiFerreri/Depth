@@ -6,8 +6,9 @@ Nox entra en DEPTH para encontrar a Luma, su esposa, cuyos recuerdos fueron alte
 por PRISMA. Ella todavía deja señales. Para llegar hasta ella debes entenderlas,
 coordinar movimientos y aprender a distinguir los recuerdos de las órdenes.
 
-**Versión 0.4.0:** 100 cámaras jugables, diez familias de acertijos, progresión guardada,
-300 estrellas y expediciones reproducibles por código. JavaScript nativo, Canvas 2D,
+**Versión 0.5.0:** cinco mundos jugables, cien cámaras, diez familias de acertijos,
+20 escenas opcionales, capacidades, obstáculos, 300 estrellas, cinco insignias,
+historial y una API procedural local. JavaScript nativo, Canvas 2D,
 Web Audio y simulación a 120 Hz. Sin servicios de pago ni dependencias de producción.
 
 ## Jugar
@@ -22,7 +23,21 @@ Abre **http://127.0.0.1:8000**. Elige **HISTORIA** para empezar o continuar; usa
 **EXPEDICIÓN** para configurar una ruta. El juego y la validación básica no necesitan
 `npm install`, cuentas ni claves. Los prototipos originales siguen en `game/`.
 
-## Una campaña más larga, con dificultad por etapas
+## Cinco mundos para explorar
+
+El **ATLAS** organiza personajes, capacidades, obstáculos y recompensas. El mapa de
+Historia agrupa sus cien cámaras en **El Vestíbulo**, **Jardines del Espejismo**,
+**Archivos Suspendidos**, **Nexo de Cristal** y **Corazón de PRISMA**. Puedes explorar
+cualquier mundo desde Expedición y ajustar su dificultad.
+
+Cada mundo tiene arquitectura y obstáculos propios: resortes, barreras pulsantes,
+puentes que se derrumban, corrientes y centinelas. Nox usa **Ancla** y Luma **Velo**
+con F. Las capacidades tienen recarga; la energía la reduce. Los fragmentos revelan
+escenas de Luma que se conservan en el atlas al completar la cámara.
+
+[Guía de mundos, puntuación y recompensas](docs/WORLDS.md).
+
+## La campaña, con dificultad por etapas
 
 | Cámaras | Capítulo | Regla jugable |
 |---|---|---|
@@ -57,13 +72,18 @@ no impone un tiempo máximo para terminar.
 - **Expediciones:** códigos propios, código del día o de la semana (UTC), cinco intensidades
   y recorridos de 12, 36 o hasta 100 000 cámaras en Abismo.
 - **Mezcla de reglas:** cada bloque de diez cámaras de expedición contiene las diez
-  familias y termina con una prueba combinada. Su orden intermedio cambia por código.
+  familias y termina con una prueba combinada al elegir «Todos». Su orden intermedio
+  cambia por código. Un mundo seleccionado alterna sus dos familias.
 - **Experto y Maestro:** añaden un plazo entre recuerdos; perderlo conserva el último
   bloque completo. Las pausas y el diario detienen ese plazo.
+- **20 ecos opcionales y cinco insignias:** explora rutas y completa los mundos para ampliar tu colección.
+- **Mis trayectorias:** últimos 200 intentos, estadísticas, resultados y configuración para volver a jugar.
+- **Puntuación explicada:** desglose de exploración, acertijos, trayectoria, cierre e impactos.
 - **Memoria acotada:** solo se carga la cámara actual, también en recorridos largos.
 
-Para compartir una expedición, comparte **código + intensidad + longitud + versión
-0.4**. Esa combinación reproduce la misma ruta. La dificultad alcanza un límite:
+Para compartir una expedición, comparte **versión del generador + código + mundo elegido o mezcla + intensidad +
+longitud + cámara**. Esa combinación reproduce la misma ruta. El generador v4 se conserva para rutas
+antiguas; v5 añade los mundos y capacidades. La dificultad alcanza un límite:
 no reduce indefinidamente las plataformas ni los intervalos de reacción.
 
 Esto ofrece una base de rejugabilidad; no demuestra que alguien jugará cinco años.
@@ -77,7 +97,7 @@ Historia guarda la cámara desbloqueada, estrellas y mejores tiempos. Expedició
 conserva el código y la cámara desde la que continuar. El punto de guardado es el
 inicio de una cámara: salir a mitad de ella reinicia ese intento. Usa **Exportar
 progreso** para guardar una copia JSON e **Importar copia** para combinarla conservando
-los mejores logros. Borrar los datos del navegador borra su copia local.
+los mejores logros, escenas e historial. Borrar los datos del navegador borra su copia local.
 
 | Acción | Teclado / ratón | Táctil |
 |---|---|---|
@@ -86,6 +106,7 @@ los mejores logros. Borrar los datos del navegador borra su copia local.
 | Dash | Shift | Dash |
 | Leer pistas y ayuda | E | ECOS |
 | Alternar Nox/Luma, cuando esté disponible | Q | CAMBIAR |
+| Ancla de Nox / Velo de Luma (v5) | F | Capacidad |
 | Disparar en arcade | J o mantener ratón para apuntar | Fuego |
 | Caída rápida | S / abajo | — |
 | Pausar | P / Escape | Pausa |
@@ -102,6 +123,20 @@ Su generador conserva los cuatro patrones originales. Tienen curvas, dash, dispa
 enemigos, escudos, gravedad ligera, combos y checkpoints. Son distintos de las nuevas
 cámaras narrativas y de las expediciones de acertijos.
 
+## API procedural local
+
+`npm start` sirve también `/api/v1` en el mismo puerto. Permite consultar el catálogo,
+generar una cámara o lotes de hasta 20 y validar su estructura. Usa el mismo generador
+determinista que el juego, sin llamadas de IA, claves ni servicios de pago.
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/levels/generate?seed=LUMA&worldId=archives&intensity=3'
+```
+
+En el menú: **EXPEDICIÓN → Preparar y compartir una cámara** para descargar y jugar
+el resultado. [Documentación y ejemplos](docs/api/README.md) · [OpenAPI](docs/api/openapi.json).
+El servidor es local; un alojamiento estático por sí solo no ejecuta esta API.
+
 ## Validar en tu equipo
 
 ```powershell
@@ -112,10 +147,11 @@ Genera `build/validation/report.md` y `report.json`, más el informe por cámara
 `levels.md` y `levels.json`. Devuelve un código de error si una comprobación falla.
 No ejecuta GitHub Actions, navegador ni servicios remotos.
 
-- **36 pruebas pasan**, incluyendo regresiones del arcade y del primer nivel.
-- **56 comprobaciones de sintaxis** pasan y los JSON se leen correctamente.
+- **58 pruebas pasan**, incluyendo regresiones del arcade y del primer nivel.
+- **71 comprobaciones de sintaxis** pasan y los JSON se leen correctamente.
 - Un piloto con controles completa **las 100 cámaras** y una expedición de **36**
-  en intensidad Maestro. También se comprueban guardado, copias y reglas individuales.
+  en intensidad Maestro, más **10 rutas de mundos seleccionados**. Se comprueban
+  la API HTTP, versiones, capacidades, puntuación, historial, escenas y copias.
 - El piloto conoce las soluciones: mide viabilidad, no dificultad o diversión humana.
 
 Comandos separados: `npm test`, `npm run check`, `npm run audit:levels`.
@@ -124,14 +160,19 @@ La validación visual, sonora y táctil en navegador real sigue pendiente. El
 
 ## Repositorio
 
+- `src/content/`: catálogo común y veinte escenas opcionales.
+- `src/generation/Generator.js`: contrato procedural y validación; `v4/` preserva rutas anteriores.
+- `server/http.mjs`: API y servidor local; `docs/api/` contiene OpenAPI y ejemplos.
 - `src/story/Campaign.js`: reglas, curva de dificultad, pistas y expediciones.
 - `src/story/SequencePuzzle.js`, `SwitchPuzzle.js`: controladores independientes.
 - `src/world/StoryLevel.js`: geometría y reliquias de la cámara actual.
-- `src/core/Progress.js`: avance, estrellas, migración y copias locales.
+- `src/core/Progress.js`, `History.js`, `Score.js`: progreso, escenas, intentos y puntuación.
+- `src/world/WorldFeatures.js`, `mechanics/WorldSystems.js`: obstáculos y capacidades.
+- `src/ui/Atlas.js`: mundos, colección e historial.
 - `src/core`, `physics`, `render`, `audio`: motor y presentación.
 - `tests/`, `tools/`: regresiones, piloto y validación local.
 - `game/`, `archive/`: prototipos y variantes anteriores.
-- `docs/`: [auditoría 0.4](docs/AUDIT-0.4.md), [arquitectura](docs/ARCHITECTURE.md),
+- `docs/`: [auditoría 0.5](docs/AUDIT-0.5.md), [arquitectura](docs/ARCHITECTURE.md),
   guion, niveles y siguientes pasos. [Cambios](CHANGELOG.md).
 
 Sin analítica, clasificación online, cuentas, llamadas de IA, despliegue automático

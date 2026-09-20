@@ -5,7 +5,11 @@
 > See [architecture and current limits](ARCHITECTURE.md) and the
 > [audit](AUDIT-2026-09-19.md) before treating items below as completed.
 
-## Current story milestone (0.4)
+## Current story milestone (0.5)
+
+Five playable worlds, a shared catalog, twenty collectible scenes, Nox/Luma abilities,
+world obstacles, result history and a local procedural API are implemented.
+See [worlds](WORLDS.md), [API](api/README.md) and [audit 0.5](AUDIT-0.5.md).
 
 Completed: 100 deterministic story chambers, ten rule families, Nox/Luma switching,
 seeded expeditions, chamber saves, unlock map, optional relics, stars and local backup

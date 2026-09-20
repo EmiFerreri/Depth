@@ -1,7 +1,7 @@
 export class Input {
   constructor(canvas, onPause, onRestart, onJournal = () => {}) {
     this.keys = new Set(); this.touch = new Map(); this.actions = new Set(); this.pointer = null; this.firing = false;
-    const keyActions = { Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', ShiftLeft: 'dash', ShiftRight: 'dash', KeyQ: 'swap' };
+    const keyActions = { Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', ShiftLeft: 'dash', ShiftRight: 'dash', KeyQ: 'swap', KeyF: 'ability' };
     addEventListener('keydown', event => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
       if (event.target.closest('dialog')) return;
@@ -26,7 +26,7 @@ export class Input {
       button.addEventListener('pointerdown', event => {
         event.preventDefault(); button.setPointerCapture(event.pointerId);
         const action = button.dataset.control; this.touch.set(event.pointerId, action);
-        if (action === 'jump' || action === 'dash' || action === 'swap') this.actions.add(action);
+        if (action === 'jump' || action === 'dash' || action === 'swap' || action === 'ability') this.actions.add(action);
       });
       const release = event => this.touch.delete(event.pointerId);
       button.addEventListener('pointerup', release); button.addEventListener('pointercancel', release); button.addEventListener('lostpointercapture', release);
@@ -37,7 +37,7 @@ export class Input {
     const touched = new Set(this.touch.values());
     const right = this.keys.has('KeyD') || this.keys.has('ArrowRight') || touched.has('right');
     const left = this.keys.has('KeyA') || this.keys.has('ArrowLeft') || touched.has('left');
-    const data = { move: Number(right) - Number(left), jump: this.actions.has('jump'), dash: this.actions.has('dash'), swap: this.actions.has('swap'),
+    const data = { move: Number(right) - Number(left), jump: this.actions.has('jump'), dash: this.actions.has('dash'), swap: this.actions.has('swap'), ability: this.actions.has('ability'),
       down: this.keys.has('KeyS') || this.keys.has('ArrowDown'), shoot: this.firing || this.keys.has('KeyJ') || touched.has('shoot') };
     if (this.firing && this.pointer) {
       const position = renderer.worldPoint(this.pointer); data.aimX = position.x; data.aimY = position.y;

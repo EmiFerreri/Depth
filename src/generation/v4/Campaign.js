@@ -1,8 +1,7 @@
-import { seededRandom } from '../world/ChunkGenerator.js';
-import { STORY, STORY_CHAPTERS } from './StoryData.js';
-import { LEVEL_NAMES } from './LevelNames.js';
-import { getWorld, worldForChapter } from '../content/Catalog.js';
-export const CAMPAIGN_VERSION = 5;
+import { seededRandom } from '../../world/ChunkGenerator.js';
+import { STORY, STORY_CHAPTERS } from '../../story/StoryData.js';
+import { LEVEL_NAMES } from '../../story/LevelNames.js';
+export const CAMPAIGN_VERSION = 4;
 export const TOTAL_LEVELS = 100;
 export const RULE_NAMES = ['Recuerdos', 'Espejo', 'Dirección', 'Voces auténticas', 'Quietud', 'Archivo', 'Cooperación', 'Interruptores', 'Silencio', 'Despertar'];
 export const CHAPTER_ECHOES = [STORY.echo,
@@ -44,10 +43,7 @@ export function getLevelSpec(mode = 'story', options = {}) {
   const intensity = expedition ? Math.max(1, Math.min(5, Math.floor(Number(options.intensity) || 1))) : 1;
   const runLength = expedition && [0, 12, 36].includes(options.length) ? options.length : 12;
   const seed = expedition ? normalizeSeed(options.seed) : 'ECOS-DE-TI';
-  let chapter = expedition ? [...shuffle([...Array(9).keys()], seededRandom(`${seed}:deck:${Math.floor((level - 1) / 10)}`)), 9][(level - 1) % 10] : Math.floor((level - 1) / 10);
-  const chosenWorld = expedition && options.worldId ? getWorld(options.worldId) : null;
-  if (chosenWorld) chapter = chosenWorld.chapters[(level - 1) % 2];
-  const world = chosenWorld || worldForChapter(chapter);
+  const chapter = expedition ? [...shuffle([...Array(9).keys()], seededRandom(`${seed}:deck:${Math.floor((level - 1) / 10)}`)), 9][(level - 1) % 10] : Math.floor((level - 1) / 10);
   const difficulty = expedition ? Math.min(1, (intensity - 1) * 0.2 + (level - 1) * 0.012) : (level - 1) / 99;
   const random = seededRandom(`${seed}:v${CAMPAIGN_VERSION}:${level}:${intensity}:${runLength}`);
   const count = 3 + Math.floor(difficulty * 2.99);
@@ -85,8 +81,8 @@ export function getLevelSpec(mode = 'story', options = {}) {
     rhythm: `Orden: ${numbers}. Aterriza durante SILENCIO ABIERTO. Una nota fuera de tiempo rompe la secuencia.`,
     synthesis: `Las últimas defensas: ${directions}. Puedes consultar el próximo paso y conservar cada bloque de tres recuerdos.`,
   };
-  return { mode, level, chapter, difficulty, intensity, runLength, seed, rules, generatorVersion: 5, worldId: world.id, worldName: world.name, worldChoice: chosenWorld?.id || null,
-    id: expedition ? `exp-v${CAMPAIGN_VERSION}:${seed}:${intensity}:${runLength}:${level}${chosenWorld ? `:${chosenWorld.id}` : ""}` : `story-v${CAMPAIGN_VERSION}:${level}`,
+  return { mode, level, chapter, difficulty, intensity, runLength, seed, rules,
+    id: expedition ? `exp-v${CAMPAIGN_VERSION}:${seed}:${intensity}:${runLength}:${level}` : `story-v${CAMPAIGN_VERSION}:${level}`,
     title: expedition ? `Expedición ${String(level).padStart(2, '0')} · ${RULE_NAMES[chapter]}` : LEVEL_NAMES[level - 1],
     chapterTitle: STORY_CHAPTERS[chapter], introduction: CHAPTER_INTROS[chapter],
     clue: first ? STORY.clue : hints[kind],

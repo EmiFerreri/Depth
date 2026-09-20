@@ -16,3 +16,10 @@ and physics; its times and lack of errors do not measure human difficulty or enj
 Real Chromium UI checks are optional: [playtest instructions](../docs/PLAYTEST.md).
 They are not reported as passed in this environment. Inspect the screenshots manually,
 and separately assess audio, touch ergonomics, readability and human pacing.
+
+Version 0.5 adds `worlds.test.js` and `api.test.js`: all world choices, abilities,
+world mechanics, score reconciliation, idempotent history, optional memory saves,
+v4 fixtures, HTTP catalog/generation/batches, strict inputs, payload limits,
+same-origin/Host boundaries, path checks, OpenAPI and the JavaScript HTTP example.
+HTTP tests create a server on an ephemeral loopback port and close it afterwards.
+The audit also completes two selected-world rooms per world with optional relics.

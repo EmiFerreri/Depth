@@ -109,3 +109,30 @@ Inspect screenshots manually; automated assertions do not establish visual polis
 - Do wider hazards and higher routes create choices rather than just more repetition?
 
 Capture observations locally. There is no telemetry service or online leaderboard.
+
+## Worlds, abilities, collection and API (0.5)
+
+1. Open ATLAS: five worlds, character dossiers, capabilities and earned/locked scenes.
+   Select each world and verify its name, motifs and two alternating rule families.
+2. In Gardens/Core, read LIBRE → AVISO → ACTIVA. Wait below a beam and jump over it.
+   Check damage agrees with the displayed phase, with sound both on and off.
+3. Stand on an Archives/Nexus fragile bridge until it breaks, then watch it return.
+   The bridge must not count as a puzzle pad. Compare falling inside/outside a current.
+4. Land on a Vestíbulo spring from above. Cross a centinel patrol and test protection.
+5. Press F for Nox, then Q/F for Luma in cooperation. Check cooldown, braking/float,
+   energy reduction, pause and separate character states. Try F + dash against a seal.
+6. Collect a fragment, read its scene in ECOS, complete and find it in ATLAS after reload.
+   Repeat but return to menu before finishing: that new scene must not persist yet.
+7. Complete, retry and quit several routes. Check one history row per attempt, score
+   breakdown, practice labels and exact route settings on VOLVER A JUGAR.
+8. Export/import a copy containing scenes and history. Duplicate imports must not
+   duplicate rows or remove achievements. Resume an old v4 expedition separately.
+9. Start the Node server, open Preparar y compartir una cámara, generate, download and
+   play. Change settings during generation: stale responses must not start an old route.
+   On a static-only host, verify the normal start works and preparation explains its limit.
+10. On 360/390 px phones and short landscape screens, inspect the F/Q buttons,
+    scrollable objective panel, expanded atlas/history and every obstacle label. Ensure
+    simultaneous move/jump/ability input and dialog focus behave correctly.
+
+The optional browser script includes atlas selection, API preparation, ability use and
+history display. Its assertions and screenshots do not replace the observations above.

@@ -2,6 +2,7 @@ import { BALANCE as B } from '../config/balance.js';
 import { Camera } from './Camera.js';
 import { railPoint } from '../physics/RailPhysics.js';
 import { drawStory } from './StoryRenderer.js';
+import { drawMotif, drawWorldFeatures, drawBeam } from './WorldRenderer.js';
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d', { alpha: false });
@@ -36,7 +37,7 @@ export class Renderer {
     const c = this.ctx, p = game.player, world = game.world;
     this.camera.update(p, this.viewWidth, dt);
     const cam = this.camera.x;
-    c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.fillStyle = '#f4f3ee'; c.fillRect(0, 0, this.width, this.height);
+    c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.fillStyle = world.biome?.paper || '#f4f3ee'; c.fillRect(0, 0, this.width, this.height);
     c.translate(this.offsetX, this.offsetY); c.scale(this.scale, this.scale);
     if (!this.reduced && game.state === 'running') { this.shake = Math.max(0, this.shake - dt * 22); c.translate(Math.sin(game.time * 90) * this.shake, 0); }
     // Quiet architectural background; all saturation belongs to game mechanics.
@@ -44,6 +45,7 @@ export class Renderer {
     for (let x = -(cam * 0.15 % 90); x < this.viewWidth; x += 90) { c.beginPath(); c.moveTo(x, 100); c.lineTo(x, 620); c.stroke(); }
     for (let y = 144; y < 650; y += 90) { c.beginPath(); c.moveTo(0, y); c.lineTo(this.viewWidth, y); c.stroke(); }
     c.fillStyle = '#e6e5df'; c.font = 'bold 240px Arial'; c.textAlign = 'right'; c.fillText(String(game.story?.spec.level || game.sector + 1).padStart(2, '0'), this.viewWidth - 45, 545);
+    drawMotif(c, world.biome, this.viewWidth, cam);
     c.textAlign = 'left';
     c.strokeStyle = '#969892'; c.beginPath(); c.moveTo(0, B.floor); c.lineTo(this.viewWidth, B.floor); c.stroke();
     const visible = (x, w = 50) => x + w > cam - 100 && x < cam + this.viewWidth + 100;
@@ -65,9 +67,11 @@ export class Renderer {
       c.fillStyle = '#30342f'; c.fillRect(platform.x, platform.y, platform.w, 4);
       c.fillStyle = '#dedfd7'; c.fillRect(platform.x, platform.y + 8, platform.w, 2);
     }
+    drawWorldFeatures(c, game, visible);
     if (game.story) drawStory(c, game, this.reduced);
     for (const hazard of world.hazards) {
       if (!visible(hazard.x, hazard.w)) continue;
+      if (hazard.kind === 'pulse-beam') { drawBeam(c, hazard); continue; }
       c.fillStyle = '#cf4b34';
       for (let x = hazard.x; x < hazard.x + hazard.w; x += 16) { c.beginPath(); c.moveTo(x, B.floor); c.lineTo(x + 8, hazard.y); c.lineTo(x + 16, B.floor); c.fill(); }
     }
@@ -77,6 +81,8 @@ export class Renderer {
       c.save(); c.translate(item.x, item.y + pulse);
       if (item.kind === 'relic') {
         c.strokeStyle = '#8c7030'; c.lineWidth = 2; c.rotate(Math.PI / 4); c.strokeRect(-11, -11, 22, 22); c.fillStyle = '#8c7030'; c.fillRect(-4, -4, 8, 8);
+      } else if (item.kind === 'fragment') {
+        c.rotate(Math.PI / 4); c.strokeStyle = world.biome?.accent || '#795b8d'; c.lineWidth = 2; c.strokeRect(-6, -6, 12, 12);
       } else if (item.kind === 'shard') {
         const spectrum = ['#be493f','#bc722c','#968619','#42865e','#487cab','#6865a1','#92658f'];
         const color = game.sector < 9 ? '#353a33' : spectrum[(game.sector === 99 ? Math.floor(item.x / 80) : Math.floor((game.sector - 9) / 3)) % spectrum.length];
@@ -84,7 +90,7 @@ export class Renderer {
       } else {
         c.strokeStyle = item.kind === 'gravity' ? '#628bd0' : '#329c7c'; c.lineWidth = 2;
         c.beginPath(); c.arc(0, 0, item.r, 0, Math.PI * 2); c.stroke();
-        c.fillStyle = c.strokeStyle; c.font = 'bold 17px monospace'; c.textAlign = 'center'; c.fillText(item.kind === 'boost' ? '»' : item.kind === 'shield' ? '+' : '↑', 0, 5);
+        c.fillStyle = c.strokeStyle; c.font = 'bold 17px monospace'; c.textAlign = 'center'; c.fillText(item.kind === 'boost' ? '»' : item.kind === 'shield' ? '+' : item.kind === 'energy' ? 'F' : '↑', 0, 5);
       }
       c.restore();
     }
@@ -110,7 +116,7 @@ export class Renderer {
     if (game.activeCharacter === 'luma') { c.strokeStyle = '#795b8d'; c.beginPath(); c.arc(p.x, p.y, p.r + 5, 0.3, Math.PI * 1.83); c.stroke(); }
     c.strokeStyle = '#f7f9ec'; c.lineWidth = 1.5; c.beginPath(); c.arc(p.x, p.y, 5, 0, Math.PI * 2); c.stroke();
     c.globalAlpha = 1;
-    if (p.shield || p.dashTime) { c.strokeStyle = '#329c7c'; c.beginPath(); c.arc(p.x, p.y, p.r + 7, 0, Math.PI * 2); c.stroke(); }
+    if (p.shield || p.dashTime || p.wardTime) { c.strokeStyle = '#329c7c'; c.beginPath(); c.arc(p.x, p.y, p.r + 7, 0, Math.PI * 2); c.stroke(); }
     if (game.time < 6 && game.state === 'running') { c.font = '12px monospace'; c.fillStyle = '#585f51'; c.fillText(game.story ? 'A / D para rodar · ESPACIO para saltar' : 'ESPACIO para saltar · SHIFT para dash', p.x - 90, p.y - 65); }
     c.restore();
   }

@@ -1,6 +1,9 @@
 import { TOTAL_LEVELS, normalizeSeed } from '../story/Campaign.js';
+import { memoryById } from '../content/Memories.js';
+import { normalizeHistory } from './History.js';
+import { getWorld } from '../content/Catalog.js';
 const KEY = 'depth.journey.v1';
-export const freshProgress = () => ({ version: 1, unlocked: 1, selected: 1, records: {}, expedition: null });
+export const freshProgress = () => ({ version: 1, unlocked: 1, selected: 1, records: {}, expedition: null, history: [], memories: [] });
 export function parseProgress(raw) {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (!data || data.version !== 1 || !data.records || typeof data.records !== 'object' || Array.isArray(data.records)) throw new Error('Formato de progreso no válido.');
@@ -15,7 +18,9 @@ export function parseProgress(raw) {
   const run = data.expedition;
   if (run && typeof run.seed === 'string' && Number.isInteger(run.level) && run.level >= 1 && run.level <= 100000 &&
     [0, 12, 36].includes(run.length) && Number.isInteger(run.intensity) && run.intensity >= 1 && run.intensity <= 5 &&
-    (!run.length || run.level <= run.length)) result.expedition = { seed: normalizeSeed(run.seed), level: run.level, intensity: run.intensity, length: run.length };
+    (!run.length || run.level <= run.length)) result.expedition = { seed: normalizeSeed(run.seed), level: run.level, intensity: run.intensity, length: run.length, generatorVersion: run.generatorVersion === 5 ? 5 : 4, worldId: run.generatorVersion === 5 && getWorld(run.worldId) ? run.worldId : null };
+  result.history = normalizeHistory(data.history);
+  result.memories = Array.isArray(data.memories) ? [...new Set(data.memories.filter(id => typeof id === 'string' && memoryById(id)))].slice(0,20) : [];
   return result;
 }
 export function loadProgress(storage, oldProfile) {
@@ -37,6 +42,7 @@ export function saveProgress(storage, progress) {
 export function stars(record) { return record?.completed ? 1 + Number(record.clean) + Number(record.relic) : 0; }
 export function completeLevel(progress, game) {
   if (!game.story || game.state !== 'finished' || !game.story.gateOpen || !game.story.echoFound) return null;
+  progress.memories = [...new Set([...(progress.memories || []), ...(game.story.memories || [])])];
   const relics = game.world.pickups.filter(p => p.kind === 'relic');
   const result = { completed: true, clean: !game.assist && !game.hits && !game.story.puzzle.mistakes,
     relic: relics.length > 0 && relics.every(p => p.used), bestTime: game.time };
@@ -56,7 +62,7 @@ export function mergeProgress(current, imported) {
     if (!a) continue;
     result.records[level] = b ? { completed: true, clean: a.clean || b.clean, relic: a.relic || b.relic, bestTime: Math.min(a.bestTime, b.bestTime) } : { ...a };
   }
-  const merged = parseProgress({ ...result, selected: Math.max(current.selected, result.selected), expedition: current.expedition || result.expedition });
+  const merged = parseProgress({ ...result, memories: [...(result.memories || []), ...(current.memories || [])], history: normalizeHistory([...(result.history || []), ...(current.history || [])]), selected: Math.max(current.selected, result.selected), expedition: current.expedition || result.expedition });
   merged.selected = merged.unlocked;
   return merged;
 }

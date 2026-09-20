@@ -1,106 +1,135 @@
-# DEPTH 0.4 architecture
+# DEPTH 0.5 architecture
 
-`index.html` loads `src/main.js` as a native ES module. There is no framework,
-production dependency, build service, remote API or backend.
+Native ES modules, Canvas 2D, Web Audio and a fixed 120 Hz simulation. Node 20+
+serves the static game and a local, stateless procedural API. There are no production
+dependencies, external generation services, accounts or database.
 
-| Module | Responsibility | Boundary |
-|---|---|---|
-| `core/Game.js` | Run lifecycle, movement integration, combat, score, swapping and finish | Fixed-step input snapshots; no DOM |
-| `core/Time.js` | 120 Hz clock and bounded catch-up | Max 12 physics steps per display frame |
-| `core/Input.js` | Keyboard, mouse and multipointer touch | Edge actions, dialog isolation, release on blur |
-| `physics/PlayerPhysics.js` | Integration, platforms, bounds and rail entry | Returns supporting platform ID; coordinates independent of viewport |
-| `physics/Collision.js` | Swept collision and one-way landing | Pure geometry |
-| `physics/RailPhysics.js` | Parametric rail movement | Stylized y(x) curves, not energy-conserving 360° loops |
-| `story/Campaign.js` | Versioned chamber specifications, clue text, difficulty and seed policy | Pure deterministic data generation |
-| `story/SequencePuzzle.js` | Ordered contacts, direction, identity, hold, pulse and deadlines | Progress and error events; solved state latched |
-| `story/SwitchPuzzle.js` | Triangular Lights Out puzzle | Solvable binary board with contact debouncing |
-| `story/StoryProgress.js` | Discovery, journal, puzzle integration, full-height seal and echo | Runs before distance score and completion |
-| `world/StoryLevel.js` | Geometry, authentic/false pads, hazards and optional relic | One camera/room loaded at a time |
-| `world/LevelGenerator.js` | Arcade routes and narrative world dispatch | Original four arcade patterns remain |
-| `render/Renderer.js`, `StoryRenderer.js` | Canvas, camera, effects and rule presentation | Render-only randomness |
-| `audio/Audio.js` | Synthesized tones and counted pad pulses | User gesture unlock; optional for solving |
-| `core/Storage.js` | Up to 100 local score/time entries | Keys separate mode, generator identity, practice and controls |
-| `core/Progress.js` | Stable campaign achievements, unlocks, backup merge and expedition checkpoint | Validated schema, 100 campaign records, one active expedition |
-| `main.js` | Menu, map, dialogs, save integration, input and HUD | Browser adapter for the pure engine |
+| Module | Responsibility |
+|---|---|
+| `content/Catalog.js`, `Memories.js` | World/chapter/room relationships, characters, mechanics, rewards and twenty optional scenes |
+| `story/Campaign.js` | Version 5 chamber rules, progression, narrative clues and seeded world selection |
+| `generation/v4/` | Frozen version 4 generators; compatibility fixtures guard their output |
+| `world/StoryLevel.js`, `WorldFeatures.js` | One deterministic room, required puzzle pads and optional world corridors |
+| `generation/Generator.js` | Strict request normalization, reusable generation envelope and structural validation |
+| `server/http.mjs` | Loopback HTTP API and static files; bounded body/requests; no data writes |
+| `core/Game.js` | Lifecycle, player integration, scoring, abilities, swapping and completion |
+| `core/Time.js` | Fixed-step clock; at most 12 catch-up steps per display frame |
+| `core/Input.js` | Edge actions, dialog isolation, multipointer touch and release on blur |
+| `physics/` | Movement, rails, one-way platform landings and swept collision |
+| `mechanics/WorldSystems.js` | Beam phases, patrols, fragile supports, springs, fields and character abilities |
+| `story/SequencePuzzle.js`, `SwitchPuzzle.js` | Stateful rule controllers and debounced contacts |
+| `story/StoryProgress.js` | Clue/journal, optional memories, full-height seal and completion echo |
+| `core/Score.js` | Source ledger, combo rewards and bounded deductions |
+| `core/Progress.js`, `History.js` | Save validation, independent achievements, scenes, attempts and backup merge |
+| `core/Storage.js` | Up to 100 score/time bests, keyed separately by route/practice/control mode |
+| `render/` | Camera, world motifs, mechanical silhouettes, rule labels and effects |
+| `ui/Atlas.js`, `main.js` | Catalog presentation, menus, map, history, API preview, save integration and HUD |
 
 ```mermaid
 flowchart TD
-    A["Mode, code and progress"] --> B["Versioned chamber specification"]
-    B --> C["Geometry"]
-    B --> D["Puzzle controller"]
-    C --> E["Fixed-step movement"]
-    E --> D
-    D --> F["Gate and completion"]
-    F --> G["Local progress"]
-    G --> A
+    A["Catalog and versioned rules"] --> B["Room generator"]
+    B --> C["Browser game"]
+    B --> D["Local HTTP API"]
+    D --> E["Route preview"]
+    E --> C
+    C --> F["Progress, memories and history"]
+    F --> G["Atlas and replay selection"]
+    G --> C
 ```
+
+## Generation contracts
+
+`generateLevel(parameters)` returns `schemaVersion`, `generatorVersion`, `id`,
+normalized `parameters`, initial `world` and `validation`. HTTP GET/POST and direct
+module calls agree byte-for-byte for the same parameters. The browser route preview
+also compares the returned geometry against a locally constructed Game before play.
+The interface never executes scripts or installs arbitrary imported world JSON.
+
+Version 5 IDs are `story-v5:level` or
+`exp-v5:SEED:intensity:length:level[:selectedWorld]`. The selected-world suffix is
+omitted for mixed expeditions. Mixed decks use each of nine base families once,
+then synthesis. Explicit worlds alternate their two families. Difficulty is clamped
+to [0,1]; geometry, number of objects, sequence length and timing windows are bounded.
+Only the active room is loaded, even in a 100000-room expedition.
+
+`generatorVersion: 4` dispatches to the preserved source under `generation/v4/`.
+Geometry fixtures are hashes from base commit `b4cc2400bec93faaa542878853e6a100cd0e3085`.
+Legacy expedition saves without a version resume v4. The newer catalog can describe
+old chapters without altering their room data. Future shared source changes must
+keep those fixture tests passing or introduce an explicit migration/version policy.
+
+API validation is structural: bounds, IDs, rule parameters, required pads, references
+and the closed seal geometry. It does not run physics. Its response always states
+`reachability: "not-run"`; the separate input pilot supplies sampled feasibility
+checks. The full [HTTP contract](api/README.md) and [OpenAPI](api/openapi.json) document
+limits, errors and local-only operation.
 
 ## Simulation and lifecycle
 
-World height: 720 units; floor: 594; sphere radius: 14. Velocities are units/s,
-gravity is units/s². The clock discards excess real time after a stall. Timers measure
-simulated active play, not wall-clock time. Pause, journal and hidden tabs stop it.
+World height 720; floor 594; radius 14. Positions use world units, velocities units/s
+and acceleration units/s². Lifecycle: ready → running ↔ paused → finished. The clock
+measures active simulated time; pause, journal and focus loss freeze all mechanics.
 
-Lifecycle: ready → running ↔ paused → finished. Introduction remains in ready.
-Each completed narrative chamber ends with a result and an explicit next button.
-The next chamber creates a fresh Game. Replaying does not remove achievements.
+A step updates the chosen character, world phases, optional ability, movement,
+puzzle/gate, world contacts, pickups, hazards, arcade combat and finish. Distance
+rewards occur after the gate clamp. A respawn does not sweep across intervening
+pickups. The seal covers the complete playable height and cannot be bypassed by
+repeated jumps, dash or protection.
 
-Nox and Luma have separate Player instances in cooperative chambers. The inactive
-character freezes in place. Returning to a supported character preserves contact;
-only leaving and landing again activates that pad. The final story exit requires Luma.
+Both characters have independent Player instances when cooperation is enabled.
+The inactive one freezes, including its cooldown. Returning to a player already on
+a pad preserves contact. The final story exit requires Luma. Ancla protects 0.65 s
+with a 6 s cooldown. Velo gives 2.4 s low gravity and 0.35 s protection with an 8 s
+cooldown. Energy removes 3 s of remaining cooldown. Respawn resets ability state.
 
-## Difficulty and generation
+Puzzle platforms and optional fragile supports are separate collections; standing
+on a support cannot activate a puzzle. Fragile supports return after collapse.
+Beam damage depends on its visible phase; patrol contact uses relative swept
+motion. Springs require a downward landing. Currents modify acceleration locally.
 
-Story maps levels 1–100 to ten chapter families. Chamber identity is `story-v4:level`.
-Expedition identity includes version, normalized seed, intensity, run length and room.
-A deterministic deck places each of the nine basic families once per ten rooms;
-the combined family closes each deck. No adjacent deck boundary repeats that family.
+Sequence steps can constrain pad, direction, character, continuous residence and
+rhythm window. Late mistakes preserve completed three-step blocks where enabled.
+Only advanced expeditions impose a deadline between memories. Switch i toggles i
+and i+1; the last toggles itself. This triangular system is always solvable by
+addressing lit bits from left to right. Completed puzzles pay once.
 
-Difficulty increases with story depth or expedition depth/intensity, then caps at 1.
-Bounds protect minimum platform widths and pulse windows. Chapter wave lengths ease
-slightly when a new rule is introduced. See `Campaign.js` and the [audit](AUDIT-0.4.md).
+## Progress, history and score
 
-A generated room has at most eight puzzle pads, a bounded number of ground hazards
-and one relic. Completed worlds are discarded on advancement. Abismo supports up to
-100,000 rooms per run; it does not instantiate that many rooms or claim mathematical infinity.
+The stable `depth.journey.v1` schema adds `memories` (up to 20 IDs), `history`
+(up to 200 attempt records) and version/world fields on the active expedition.
+Older backups still load. Unknown scene/world IDs are dropped; histories validate
+types, finite values, dates, route bounds and outcomes. Imports merge achievements
+and scenes, deduplicate attempt IDs and keep the newest 200 entries. Import file
+size is capped at 1 MB in the UI; typical complete backups are much smaller.
 
-## Puzzle contracts
+Complete a chamber to save its found scenes and earn completion/relic/precision
+stars. Each star is independent and accumulates across attempts. Badges derive
+from completing all 20 chambers of a story world. Neither scenes nor badges block
+advancement. Replay never removes earned achievements.
 
-A contact is debounced until the player leaves. A sequence step may require pad,
-movement direction, character, continuous residence or an open rhythm window. Wrong
-inputs explain which constraint failed. Advanced sequences preserve completed blocks.
-Only Expert/Master expeditions apply an active-play memory deadline; the journal pauses it.
+`recordAttempt` runs on completion, restart or explicit menu exit. It records once
+per Game, excludes unplayed introductions, and saves mode/world/room, exact generator
+settings, practice, time, score, ledger, hits, mistakes, ability uses and earned stars.
+Closing a tab mid-room does not record that unfinished attempt. This is result
+history, not input replay or online telemetry.
 
-Switch pad i toggles bit i and bit i+1, except the final pad, which toggles itself.
-This triangular transform can always be solved by addressing lit bits left to right.
-Initial boards are made from a known nonempty solution. Repeated contact does not toggle.
+Score changes go through a source ledger; distance, puzzle, pickup, combat, rail,
+completion and penalty amounts sum to the score. Deductions cannot go below zero.
+World v5 rewards are documented in [WORLDS.md](WORLDS.md). Legacy/arcade values remain.
+Record keys include versioned route identity and separate practice and control modes.
 
-The locked seal clamps x across the complete playable height before scoring or finish.
-Infinite jumps cannot bypass it. The echo is collected when crossing its x boundary
-after solving, including airborne traversal. Optional relics use swept pickup collision.
+Storage failures preserve in-memory play and show the export option. Backups do not
+include exact physics state, all preferences or the separate complete arcade record
+store. Progress is local and user-editable, with no trusted leaderboard claims.
 
-## Save and score contracts
+## Validation and boundaries
 
-- Completion alone unlocks the next story chamber; no stars or grind are required.
-- Stars are independent cumulative achievements: complete, clean in standard mode,
-  and relic. Clean means no puzzle mistakes and no impacts in that attempt.
-- JSON schema `depth.journey.v1` validates records, finite times, seed length, depth,
-  intensity and route length. Imports merge best time and earned achievements.
-- Legacy 0.3 first-level records unlock chamber 2 without granting unproven medals.
-- Expedition save records the current chamber entrance; completion advances that checkpoint.
-- Interrupted chambers restart from their entrance. Exact physics state, partial puzzles,
-  settings and all arcade marks are not included in exported journey backups.
-- Score comes from new distance, once-only pickups and puzzle completion. Standing still
-  or revisiting a solved pad cannot farm score. Arcade checkpoints preserve used rewards.
-- Save failures are surfaced, while the in-memory game stays playable and exportable.
+`npm run validate` runs regressions, syntax/JSON checks and a pilot with movement,
+jump and swap inputs. Reports go to `build/validation/`. The pilot knows the
+solutions; its success proves sampled reachability, not human difficulty or fun.
+Real-browser layout, audio, touch, frame pacing and accessibility sign-off remain
+pending. An optional browser smoke covers the atlas, API preview and history too.
 
-## Validation and limitations
-
-`npm run validate` invokes Node directly for regressions, syntax and complete pilot runs.
-It emits Markdown/JSON reports and fails its process exit code on a failed gate.
-The input-only pilot knows solutions; it is evidence of feasibility, not human playtesting.
-
-Canvas layout, actual audio, touch ergonomics, performance and visual accessibility
-still require real-browser sign-off. Other limits include no gamepad/remapping,
-full nonvisual play, replay files, custom authored-room editor, trusted leaderboard
-or online synchronization. See [PLAYTEST.md](PLAYTEST.md) and [LONGEVITY.md](LONGEVITY.md).
+No public API deployment, multiplayer, server saves, full editor, gamepad mapping,
+nonvisual gameplay or long-term retention study is included. See [PLAYTEST.md](PLAYTEST.md)
+and the [longevity plan](LONGEVITY.md).

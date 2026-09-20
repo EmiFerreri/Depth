@@ -5,7 +5,7 @@ test('keyboard repeats, focus loss and pointer cancellation cannot stick control
   const previous = Object.fromEntries(['document', 'addEventListener', 'HTMLInputElement', 'HTMLSelectElement'].map(k => [k, globalThis[k]]));
   t.after(() => { for (const [key, value] of Object.entries(previous)) if (value === undefined) delete globalThis[key]; else globalThis[key] = value; });
   const listeners = {}, controls = [];
-  for (const action of ['left', 'right', 'jump', 'dash', 'shoot']) controls.push({ dataset: { control: action }, listeners: {},
+  for (const action of ['left', 'right', 'jump', 'dash', 'shoot', 'ability']) controls.push({ dataset: { control: action }, listeners: {},
     addEventListener(name, fn) { this.listeners[name] = fn; }, setPointerCapture() {} });
   globalThis.document = { querySelectorAll: () => controls }; globalThis.addEventListener = (name, fn) => { listeners[name] = fn; };
   globalThis.HTMLInputElement = class {}; globalThis.HTMLSelectElement = class {};
@@ -19,7 +19,12 @@ test('keyboard repeats, focus loss and pointer cancellation cannot stick control
   listeners.keydown(event('KeyE', true)); assert.equal(journals, 1);
   listeners.keydown(event('KeyQ')); assert.equal(input.read().swap, true);
   listeners.keydown(event('KeyQ', true)); assert.equal(input.read().swap, false);
-  for (const code of ['Space', 'Escape', 'KeyP', 'KeyR', 'KeyE']) {
+  listeners.keydown(event('KeyF')); assert.equal(input.read().ability, true);
+  listeners.keydown(event('KeyF', true)); assert.equal(input.read().ability, false);
+  const ability = controls[5]; ability.listeners.pointerdown({ pointerId: 3, preventDefault() {} });
+  assert.equal(input.read().ability, true); assert.equal(input.read().ability, false);
+  ability.listeners.pointercancel({ pointerId: 3 });
+  for (const code of ['KeyF', 'Space', 'Escape', 'KeyP', 'KeyR', 'KeyE']) {
     listeners.keydown({ ...event(code), target: { closest: selector => selector === 'dialog' ? {} : null } });
   }
   assert.equal(input.read().jump, false); assert.equal(pauses, 0); assert.equal(journals, 1);

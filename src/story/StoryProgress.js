@@ -1,3 +1,4 @@
+import { memoryById } from '../content/Memories.js';
 import { SequencePuzzle } from './SequencePuzzle.js';
 import { SwitchPuzzle } from './SwitchPuzzle.js';
 import { STORY } from './StoryData.js';
@@ -7,7 +8,7 @@ export class StoryProgress {
     this.spec = world.levelInfo;
     const rules = this.spec.rules;
     this.puzzle = rules.kind === 'switch' ? new SwitchPuzzle(rules.count, rules.sequence) : new SequencePuzzle(rules.sequence, rules);
-    this.clueFound = false; this.echoFound = false; this.gateHintShown = false;
+    this.memories = []; this.clueFound = false; this.echoFound = false; this.gateHintShown = false;
     this.allowSwap = rules.kind === 'duet' || rules.kind === 'synthesis';
     this.status = 'Acércate al anillo incompleto. Luma ha dejado una señal.';
   }
@@ -16,7 +17,14 @@ export class StoryProgress {
     const entries = [{ title: this.spec.chapterTitle, text: this.spec.level === 1 ? STORY.farewell : this.spec.introduction }];
     if (this.clueFound) entries.push({ title: `${this.spec.title} · pista`, text: this.spec.clue });
     if (this.echoFound) entries.push({ title: 'Eco recuperado', text: this.spec.echo });
+    entries.push(...this.memories.map(id => memoryById(id)).filter(Boolean).map(memory => ({ title: memory.title, text: memory.text })));
     return entries;
+  }
+  recoverFragment(game, item) {
+    const memory = memoryById(item.memoryId);
+    if (!memory || this.memories.includes(memory.id)) return;
+    this.memories.push(memory.id);
+    game.emit('fragment-memory', item.x, item.y, `ECO OPCIONAL · ${memory.title}. Léelo en ECOS; completa la cámara para conservarlo.`);
   }
   describeNext() {
     if (this.gateOpen) return 'Puerta abierta. Recoge el eco y alcanza la salida.';
@@ -37,7 +45,7 @@ export class StoryProgress {
       this.status = `${this.puzzle.reason} ${this.puzzle.checkpoint ? 'Bloque anterior conservado.' : 'Puedes volver a empezar.'}`;
       game.emit('puzzle-wrong', p.x, p.y, this.status);
     } else if (result === 'solved') {
-      game.reward(500 + this.spec.difficulty * 500);
+      game.reward(500 + this.spec.difficulty * 500, 'puzzles');
       this.status = 'El recuerdo encaja. Cruza la puerta y alcanza el anillo de Luma.';
       game.emit('puzzle-solved', game.world.gate.x, 370, this.status);
     } else if (result === 'charging') {

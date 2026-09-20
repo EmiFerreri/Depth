@@ -12,8 +12,8 @@
 <body>
   <canvas id="game" aria-label="Mundo de DEPTH. Usa los controles descritos en el menú."></canvas>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="DEPTH inicio"><span class="brand-orb"></span> DEPTH<span class="edition">/ 04</span></a>
-    <span class="build-label">ECOS DE TI <span>—</span> v0.4</span>
+    <a class="brand" href="./" aria-label="DEPTH inicio"><span class="brand-orb"></span> DEPTH<span class="edition">/ 05</span></a>
+    <span class="build-label">ECOS DE TI <span>—</span> v0.5</span>
     <div class="toolbar"><button id="sound" class="icon-button" aria-pressed="true" aria-label="Sonido activado">SONIDO <span>ON</span></button><button id="fullscreen" class="icon-button" aria-label="Alternar pantalla completa">⛶</button></div>
   </header>
 
@@ -37,14 +37,17 @@
         <p id="selected-chapter" class="mini-label"></p>
       </section>
       <section id="expedition-controls" class="expedition-controls" hidden aria-label="Configurar expedición">
-        <label for="exp-seed">Código de ruta · compártelo junto con intensidad y longitud</label>
+        <label for="exp-seed">Código de ruta · comparte también mundo, versión, intensidad y longitud</label>
         <input id="exp-seed" value="LUMA" maxlength="48" autocomplete="off" spellcheck="false">
         <div class="exp-presets"><button id="exp-daily">DEL DÍA</button><button id="exp-weekly">DE LA SEMANA</button><button id="exp-new">OTRA RUTA</button></div>
         <div class="exp-options"><label>Intensidad<select id="exp-intensity"><option value="1">1 · Aprendiz</option><option value="2">2 · Explorador</option><option value="3">3 · Exigente</option><option value="4">4 · Experto · memoria temporal</option><option value="5">5 · Maestro · memoria temporal</option></select></label><label>Recorrido<select id="exp-length"><option value="12">12 cámaras</option><option value="36">36 cámaras</option><option value="0">Abismo · 100 000 cámaras</option></select></label></div>
+        <div class="exp-options"><label>Mundo<select id="exp-world"><option value="">Todos · viaje entre mundos</option></select></label><label>Versión de ruta<select id="exp-version"><option value="5">5 · Mundos y capacidades</option><option value="4">4 · Rutas originales</option></select></label></div>
+        <details class="route-lab"><summary>Preparar y compartir una cámara</summary><p>Prepara la primera cámara con estos ajustes para inspeccionarla, descargarla o jugarla.</p><button id="generate-route" class="secondary">PREPARAR RUTA</button><p id="generated-status" role="status"></p><div class="exp-presets"><button id="play-generated" hidden>JUGAR ESTA CÁMARA</button><button id="download-generated" hidden>DESCARGAR RUTA</button></div></details>
         <p>La dificultad aumenta hasta un límite jugable. El avance se guarda al completar cada cámara. Sin conexión ni cuenta.</p>
         <button id="exp-resume" class="secondary" hidden>CONTINUAR EXPEDICIÓN</button>
       </section>
-      <div class="launch-row"><button id="start" class="primary">INICIAR HISTORIA <span>↗</span></button><span class="launch-note">100 recuerdos.<br>300 estrellas.</span></div>
+      <div class="collection-nav"><button id="atlas-open" class="secondary">ATLAS · 5 MUNDOS</button><button id="history-open" class="secondary">MIS TRAYECTORIAS</button></div>
+      <div class="launch-row"><button id="start" class="primary">INICIAR HISTORIA <span>↗</span></button><span class="launch-note">5 mundos.<br>20 ecos ocultos.</span></div>
       <p id="movement-note" class="movement-note">Historia usa movimiento manual: A/D o flechas. Puedes saltar de nuevo en el aire.</p>
       <div class="settings">
         <label><input id="autorun" type="checkbox" checked disabled> Autoavance</label>
@@ -71,7 +74,7 @@
       <div class="art-bottom"><div><span class="mini-label">TU MEJOR MARCA</span><strong id="best">—</strong></div><div><span class="mini-label">RITMO</span><strong>120<span> Hz</span></strong></div></div>
       <p class="art-caption">Si un día no me reconoces, busca lo que todavía sentimos.</p>
     </aside>
-    <footer class="menu-footer"><p><kbd>ESPACIO</kbd> salto infinito <kbd>SHIFT</kbd> dash <kbd>A D</kbd> mover <kbd>E</kbd> ecos <kbd>Q</kbd> alternar</p><a href="game/index.html">Explorar prototipos originales <span>↗</span></a></footer>
+    <footer class="menu-footer"><p><kbd>ESPACIO</kbd> salto infinito <kbd>SHIFT</kbd> dash <kbd>A D</kbd> mover <kbd>E</kbd> ecos <kbd>Q</kbd> alternar <kbd>F</kbd> capacidad</p><a href="game/index.html">Explorar prototipos originales <span>↗</span></a></footer>
   </main>
 
   <section id="hud" class="hud" hidden aria-label="Estado de partida">
@@ -84,19 +87,19 @@
     <p id="story-objective" role="status" aria-live="polite"></p>
     <p id="memory-progress" class="memory-progress" aria-label="Secuencia recuperada"></p>
     <p id="rule-detail" class="rule-detail"></p><p id="rhythm-status" class="rhythm-status" hidden></p><p id="memory-timer" class="memory-timer" hidden></p>
-    <button id="swap-character" class="journal-button" hidden>NOX · Q ⇄</button>
+    <button id="ability-use" class="journal-button" hidden>ANCLA · F</button><button id="swap-character" class="journal-button" hidden>NOX · Q ⇄</button>
   </aside>
   <div id="telemetry" class="telemetry" hidden><div><span class="mini-label">MOMENTUM</span><strong id="speed">0</strong><small>u/s</small></div><div class="dash-status"><span id="dash-label">DASH LISTO</span><div><i id="dash-bar"></i></div></div><strong id="combo">×1</strong></div>
   <p id="toast" class="toast" role="status" aria-live="polite"></p>
-  <div id="touch-controls" class="touch-controls" hidden aria-label="Controles táctiles"><div><button data-control="left" aria-label="Mover izquierda">←</button><button data-control="right" aria-label="Mover derecha">→</button></div><div><button data-control="swap" hidden>CAMBIAR</button><button data-control="shoot">FUEGO</button><button data-control="dash">DASH</button><button data-control="jump" class="touch-jump">SALTO</button></div></div>
+  <div id="touch-controls" class="touch-controls" hidden aria-label="Controles táctiles"><div><button data-control="left" aria-label="Mover izquierda">←</button><button data-control="right" aria-label="Mover derecha">→</button></div><div><button data-control="ability" hidden>CAPACIDAD</button><button data-control="swap" hidden>CAMBIAR</button><button data-control="shoot">FUEGO</button><button data-control="dash">DASH</button><button data-control="jump" class="touch-jump">SALTO</button></div></div>
 
   <dialog id="pause-dialog" aria-labelledby="pause-title"><p class="eyebrow">TOMA AIRE</p><h2 id="pause-title">Sin prisa.</h2><p>Tu partida sigue aquí.</p><button id="resume" class="primary">CONTINUAR <span>→</span></button><button id="restart" class="secondary">Reiniciar ruta</button><button id="quit" class="text-button">Volver al menú</button></dialog>
-  <dialog id="result-dialog" aria-labelledby="result-title"><p id="result-label" class="eyebrow">RUTA COMPLETADA</p><h2 id="result-title">Flow found.</h2><div id="story-result" hidden><p id="result-stars" class="result-stars" aria-label="Estrellas obtenidas"></p><p id="result-goals"></p><blockquote id="result-echo"></blockquote><p id="result-epilogue"></p></div><div class="result-grid"><div><span class="mini-label">PUNTOS</span><strong id="result-score"></strong></div><div><span class="mini-label">TIEMPO</span><strong id="result-time"></strong></div><div><span class="mini-label">COMBO MÁXIMO</span><strong id="result-combo"></strong></div><div><span class="mini-label">IMPACTOS</span><strong id="result-hits"></strong></div></div><p id="record-note"></p><button id="next-level" class="primary" hidden>SIGUIENTE CÁMARA <span>→</span></button><button id="again" class="primary">OTRA TRAYECTORIA <span>↗</span></button><button id="result-menu" class="text-button">Elegir otra ruta</button></dialog>
+  <dialog id="result-dialog" aria-labelledby="result-title"><p id="result-label" class="eyebrow">RUTA COMPLETADA</p><h2 id="result-title">Flow found.</h2><div id="story-result" hidden><p id="result-stars" class="result-stars" aria-label="Estrellas obtenidas"></p><p id="result-goals"></p><blockquote id="result-echo"></blockquote><p id="result-epilogue"></p></div><div class="result-grid"><div><span class="mini-label">PUNTOS</span><strong id="result-score"></strong></div><div><span class="mini-label">TIEMPO</span><strong id="result-time"></strong></div><div><span class="mini-label">COMBO MÁXIMO</span><strong id="result-combo"></strong></div><div><span class="mini-label">IMPACTOS</span><strong id="result-hits"></strong></div></div><details class="score-detail"><summary>¿De dónde salen mis puntos?</summary><dl id="score-breakdown"></dl><p>Explorar y resolver aumentan el combo. Recibir daño lo reinicia y resta hasta 150 puntos. Las estrellas son logros independientes.</p></details><p id="reward-note" role="status"></p><p id="record-note"></p><button id="next-level" class="primary" hidden>SIGUIENTE CÁMARA <span>→</span></button><button id="again" class="primary">OTRA TRAYECTORIA <span>↗</span></button><button id="result-menu" class="text-button">Elegir otra ruta</button></dialog>
   <dialog id="story-intro" class="narrative-dialog" aria-labelledby="story-title">
     <p id="story-intro-label" class="eyebrow">DEPTH / ECOS DE TI · 01</p><h2 id="story-title">La huella.</h2>
     <p id="story-introduction"></p><blockquote id="story-farewell"></blockquote>
     <p id="story-rule">Encuentra el anillo incompleto de Luma y reconstruye su recuerdo.</p>
-    <p class="control-note">A/D o flechas para rodar · Espacio para saltar · E para leer los ecos · Q para alternar cuando Luma esté disponible. En móvil, usa los botones de la pantalla.</p>
+    <p class="control-note">A/D o flechas para rodar · Espacio para saltar · E para leer los ecos · Q para alternar cuando Luma esté disponible · F para Ancla de Nox o Velo de Luma (rutas v5). En móvil, usa los botones de la pantalla.</p>
     <button id="story-begin" class="primary" autofocus>SEGUIR SU HUELLA <span>→</span></button><button id="story-back" class="text-button">Volver al menú</button>
   </dialog>
   <dialog id="journal-dialog" class="narrative-dialog" aria-labelledby="journal-title">
@@ -106,7 +109,9 @@
     <details id="journal-help" hidden><summary>Necesito una pista más clara</summary><p id="journal-solution"></p><p>Las plataformas se activan al aterrizar. Puedes caminar por debajo o saltar de nuevo en el aire. Si hay quietud, permanece sobre la huella. Si hay dirección, aterriza moviéndote hacia la flecha.</p><p>Equivocarte no quita vidas. Las estrellas por completar y por reliquia siguen disponibles. La estrella de precisión exige resolver sin errores ni daño en modo estándar.</p></details>
     <button id="journal-close" class="primary">VOLVER AL RECUERDO <span>→</span></button>
   </dialog>
-  <dialog id="map-dialog" class="map-dialog" aria-labelledby="map-title"><p class="eyebrow">EL DESCENSO / 100 CÁMARAS</p><h2 id="map-title">Vuestro camino.</h2><p>Completa una cámara para abrir la siguiente. Vuelve a las anteriores para conseguir sus tres estrellas. Cada capítulo introduce una nueva regla.</p><div id="map-chapters"></div><button id="map-close" class="primary">VOLVER <span>→</span></button></dialog>
+  <dialog id="map-dialog" class="map-dialog" aria-labelledby="map-title"><p class="eyebrow">EL DESCENSO / 100 CÁMARAS</p><h2 id="map-title">Vuestro camino.</h2><p>Completa una cámara para abrir la siguiente. Vuelve a las anteriores para conseguir sus tres estrellas. Cinco mundos, diez capítulos. Cada capítulo introduce una nueva regla.</p><div id="map-chapters"></div><button id="map-close" class="primary">VOLVER <span>→</span></button></dialog>
+  <dialog id="atlas-dialog" class="map-dialog" aria-labelledby="atlas-title"><p class="eyebrow">GUÍA DE EXPLORACIÓN</p><h2 id="atlas-title">Un mundo por recordar.</h2><p>La historia recorre estos lugares en orden. Las expediciones permiten visitar cualquiera con dificultad ajustable. Las insignias se obtienen completando sus 20 cámaras de historia. Los fragmentos ocultan otras 20 escenas de Luma.</p><div id="atlas-content"></div><button id="atlas-close" class="primary">VOLVER <span>→</span></button></dialog>
+  <dialog id="history-dialog" class="map-dialog" aria-labelledby="history-title"><p class="eyebrow">TU HISTORIAL LOCAL</p><h2 id="history-title">Mis trayectorias.</h2><p>Conservamos los últimos 200 intentos. Exportar progreso incluye este historial. Cerrar la pestaña a mitad de una cámara no registra ese intento.</p><div id="history-content"></div><button id="history-close" class="primary">VOLVER <span>→</span></button></dialog>
   <div id="load-error" class="load-error" hidden></div>
   <noscript><p class="load-error">Activa JavaScript para jugar. <a href="game/index.html">Prototipos originales</a></p></noscript>
   <script type="module" src="src/main.js"></script>
